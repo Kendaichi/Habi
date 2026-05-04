@@ -1,36 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Habi
 
-## Getting Started
+A circular economy marketplace connecting buyers, artisans, and waste suppliers across Mindanao, Philippines. Waste materials flow from suppliers through junk shops to artisans, who transform them into finished products for buyers.
 
-First, run the development server:
+## What it does
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+**Buyers** — Browse and purchase upcycled products, submit custom requests, and scan rooms for AI-powered furniture recommendations.
+
+**Artisans** — List products for sale/rent/lease, source raw materials from suppliers, and view demand signals showing trending buyer requests.
+
+**Suppliers** — Add and manage waste material inventory, connecting with artisans who need materials.
+
+**Shared** — Traceability chains show the full waste-to-product journey. Environmental impact metrics track sustainability contributions per user.
+
+## Tech stack
+
+- **Framework:** Next.js (App Router) + TypeScript
+- **UI:** shadcn/ui (Radix Nova), Tailwind CSS v4, Framer Motion
+- **Forms:** React Hook Form + Zod
+- **Database:** PostgreSQL (Supabase) via Prisma ORM
+- **Auth:** NextAuth v4 with Prisma adapter
+- **Fonts:** Fraunces (headings), DM Sans (body)
+
+## Project structure
+
+```
+src/
+├── app/
+│   ├── onboarding/      # Role selection and sign-in
+│   ├── buyer/           # Home, product detail, orders, requests, room scan
+│   ├── artisan/         # Dashboard, listings, materials, demand signals
+│   ├── supplier/        # Dashboard, add materials, inventory
+│   └── shared/          # Impact metrics, profile
+├── components/
+│   ├── ui/              # Base UI components (shadcn)
+│   ├── shared/          # BottomNav, TraceabilityCard, BuyRentLeaseToggle
+│   ├── buyer/           # ProductCard, OrderCard
+│   ├── artisan/         # DemandSignalCard
+│   └── supplier/        # MaterialCard
+├── context/
+│   └── RoleContext.tsx  # Role state (localStorage-backed)
+├── data/
+│   └── mockData.ts      # Mock products, materials, demand signals
+└── lib/
+    ├── prisma.ts         # Singleton Prisma client
+    └── utils.ts          # cn() helper
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Getting started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Prerequisites:** Node.js 18+, PostgreSQL database (Supabase recommended)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-## Learn More
+2. Set up environment variables — create a `.env` file:
+   ```
+   DATABASE_URL="postgresql://..."   # Pooled connection (app)
+   DIRECT_URL="postgresql://..."     # Direct connection (migrations)
+   NEXTAUTH_SECRET="..."
+   NEXTAUTH_URL="http://localhost:3000"
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+3. Run database migrations:
+   ```bash
+   npx prisma migrate dev
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+4. Start the dev server:
+   ```bash
+   npm run dev
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open [http://localhost:3000](http://localhost:3000) and select a role to begin.
 
-## Deploy on Vercel
+## Database schema
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Key models: `User`, `Product`, `Listing` (sale/rent/lease), `Order`, `Rental`, `JunkShop`, `TraceabilityChain`, `Material`, `DemandSignal`, `RoomScan`, `CustomRequest`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+To explore the schema:
+```bash
+npx prisma studio
+```
+
+## Scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm run start` | Run production server |
+| `npm run lint` | Run ESLint |
