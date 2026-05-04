@@ -1,9 +1,8 @@
 "use client"
 
-import { Home, ScanLine, ShoppingBag, User } from "lucide-react"
+import { LayoutGrid, ClipboardList, PackageSearch, BarChart2 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useRole } from "@/context/RoleContext"
 import type { LucideIcon } from "lucide-react"
 
 interface NavItem {
@@ -12,24 +11,20 @@ interface NavItem {
   href: string
 }
 
+const navItems: NavItem[] = [
+  { label: "Dashboard", icon: LayoutGrid, href: "/artisan/dashboard" },
+  { label: "Listing", icon: ClipboardList, href: "/artisan/list" },
+  { label: "Sourcing", icon: PackageSearch, href: "/artisan/materials" },
+  { label: "Insights", icon: BarChart2, href: "/artisan/demand" },
+]
+
 export function BottomNav() {
   const pathname = usePathname()
-  const { role } = useRole()
-
-  const dashboardHref =
-    role === "artisan" ? "/artisan/dashboard" : role === "supplier" ? "/supplier/dashboard" : "/buyer/home"
-
-  const items: NavItem[] = [
-    { label: "Discover", icon: Home, href: dashboardHref },
-    ...(role !== "supplier" ? [{ label: "AI Room", icon: ScanLine, href: "/buyer/room/upload" }] : []),
-    { label: "Orders", icon: ShoppingBag, href: "/buyer/orders" },
-    { label: "Profile", icon: User, href: "/shared/profile" },
-  ]
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-cream border-t border-border safe-area-inset-bottom">
       <div className="flex items-stretch h-16 max-w-lg mx-auto px-2">
-        {items.map((item) => {
+        {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href)
           return (
             <Link key={item.label} href={item.href} className="flex-1 flex flex-col items-center justify-center gap-1 relative py-2">
