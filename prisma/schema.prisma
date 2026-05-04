@@ -13,6 +13,13 @@ enum Role {
   SUPPLIER
 }
 
+enum Room3DGenerationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 enum ListingType {
   SALE
   RENT
@@ -35,17 +42,18 @@ enum RequestStatus {
 }
 
 model User {
-  id                     String          @id @default(cuid())
-  email                  String          @unique
-  name                   String
-  role                   Role
-  createdAt              DateTime        @default(now())
-  products               Product[]
-  orders                 Order[]
-  rentals                Rental[]
-  roomScans              RoomScan[]
-  customRequestsAsBuyer  CustomRequest[] @relation("BuyerRequests")
+  id                      String          @id @default(cuid())
+  email                   String          @unique
+  name                    String
+  role                    Role
+  createdAt               DateTime        @default(now())
+  products                Product[]
+  orders                  Order[]
+  rentals                 Rental[]
+  roomScans               RoomScan[]
+  customRequestsAsBuyer   CustomRequest[] @relation("BuyerRequests")
   customRequestsAsArtisan CustomRequest[] @relation("ArtisanRequests")
+  rooms                   Room[]
 }
 
 model Product {
@@ -151,4 +159,18 @@ model CustomRequest {
   budget      Float?
   status      RequestStatus @default(PENDING)
   createdAt   DateTime      @default(now())
+}
+
+model Room {
+  id               String                 @id @default(cuid())
+  userId           String
+  imageUrl         String
+  generationStatus Room3DGenerationStatus @default(PENDING)
+  roomTheme        String
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

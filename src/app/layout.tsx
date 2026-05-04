@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import { Fraunces, DM_Sans, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
 import { RoleProvider } from "@/context/RoleContext"
+import QueryClientProviderWrapper from "@/providers/QueryClientProvider";
+import ToastProvider from "@/providers/ToastProvider";
 
 const fraunces = Fraunces({
   variable: "--font-heading",
@@ -37,7 +39,11 @@ export default function RootLayout({
       className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <RoleProvider>{children}</RoleProvider>
+        <QueryClientProviderWrapper>
+          <ToastProvider>
+            <RoleProvider>{children}</RoleProvider>
+          </ToastProvider>
+        </QueryClientProviderWrapper>
       </body>
     </html>
   )
