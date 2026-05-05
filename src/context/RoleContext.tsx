@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
-export type UserRole = "buyer" | "artisan" | "supplier"
+export type UserRole = "buyer" | "artisan" | "supplier" | "junkshop"
 
 interface RoleContextType {
   role: UserRole | null
