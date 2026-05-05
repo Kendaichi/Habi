@@ -157,7 +157,7 @@ export default function ArtisanDashboardPage() {
         <DashboardSection title="Quick Actions">
           <div className="space-y-3">
             <Link
-              href="/artisan/list"
+              href="/artisan/list/new"
               className="bg-terracotta flex items-center gap-3 rounded-2xl px-4 py-4"
             >
               <div className="bg-cream/20 flex h-8 w-8 shrink-0 items-center justify-center rounded-full">
