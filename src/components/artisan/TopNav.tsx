@@ -1,19 +1,30 @@
-import { Bell, Leaf } from 'lucide-react'
+import { BadgeCheck, Bell } from 'lucide-react'
 
-export function TopNav() {
+interface TopNavProps {
+  profileImage?: string | null
+}
+
+export function TopNav({ profileImage }: TopNavProps) {
   return (
-    <header className="border-stone/20 bg-cream/90 sticky top-0 z-40 flex items-center border-b px-5 py-3 backdrop-blur-sm">
-      <div className="bg-forest/15 flex h-9 w-9 items-center justify-center rounded-full">
-        <Leaf className="text-forest h-5 w-5" />
+    <header className="bg-cream border-stone/20 sticky top-0 z-50 flex w-full items-center justify-between border-b px-6 py-3">
+      <div className="flex items-center gap-3">
+        <div className="border-forest/30 h-10 w-10 overflow-hidden rounded-full border-2">
+          <img
+            alt="User Profile"
+            className="h-full w-full object-cover"
+            src={profileImage ?? '/Habi_Logo.png'}
+          />
+        </div>
+        <div className="flex flex-col">
+          <span className="text-forest font-['Noto_Serif'] text-lg font-bold">Habi</span>
+          {/* <div className="flex items-center gap-1">
+            <span className="text-stone text-xs font-medium">Koronadal Recyclers</span>
+            <BadgeCheck className="text-forest h-3.5 w-3.5" fill="currentColor" strokeWidth={1.5} />
+          </div> */}
+        </div>
       </div>
-      <span className="text-charcoal flex-1 px-4 text-left text-sm font-semibold tracking-wide">
-        Artisan Hub
-      </span>
-      <button
-        className="hover:bg-stone/10 flex h-11 w-11 items-center justify-center rounded-full transition-colors"
-        aria-label="Notifications"
-      >
-        <Bell className="text-charcoal h-5 w-5" strokeWidth={1.75} />
+      <button className="text-stone transition-opacity hover:opacity-80" aria-label="Notifications">
+        <Bell className="h-6 w-6" strokeWidth={1.75} />
       </button>
     </header>
   )
