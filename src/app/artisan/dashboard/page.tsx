@@ -45,11 +45,11 @@ export default function ArtisanDashboardPage() {
     <div className="bg-cream min-h-screen">
       <TopNav />
 
-      <div className="space-y-6 px-5">
+      <div className="space-y-6 px-5 pt-6 pb-24">
         {/* Greeting */}
         <div>
           <div className="flex items-end justify-between gap-4">
-            <h1 className="font-heading text-charcoal text-4xl leading-tight font-bold">
+            <h1 className="font-heading text-charcoal text-4xl leading-tight font-semibold">
               Kumusta,
               <br />
               Sitti!
@@ -190,24 +190,39 @@ export default function ArtisanDashboardPage() {
         </DashboardSection>
 
         {/* My Sustainable Space */}
-        <div className="bg-charcoal relative h-40 overflow-hidden rounded-2xl">
+        <div className="relative h-44 overflow-hidden rounded-2xl">
           <div
             className="absolute inset-0"
             style={{
               background:
-                'radial-gradient(ellipse at 60% 40%, #1B5E3F 0%, #0f3322 50%, #1a1a0e 100%)',
+                'radial-gradient(ellipse at 65% 30%, #1B5E3F 0%, #0d2d1e 55%, #081a11 100%)',
             }}
           />
+          {/* dot-grid texture */}
           <div
-            className="absolute inset-0 opacity-20"
+            className="absolute inset-0 opacity-[0.07]"
             style={{
-              backgroundImage:
-                'radial-gradient(circle at 70% 30%, #2d7a52 0%, transparent 50%), radial-gradient(circle at 30% 70%, #4a6741 0%, transparent 40%)',
+              backgroundImage: 'radial-gradient(circle, #FAF6F0 1px, transparent 1px)',
+              backgroundSize: '20px 20px',
             }}
           />
-          <div className="from-charcoal/60 absolute inset-0 bg-linear-to-t via-transparent to-transparent" />
-          <div className="absolute bottom-4 left-4">
-            <p className="text-cream font-heading text-lg font-bold">My Sustainable Space</p>
+          {/* decorative orbs */}
+          <div className="bg-forest/40 absolute -top-8 -right-8 h-36 w-36 rounded-full blur-2xl" />
+          <div className="absolute top-8 right-4 h-16 w-16 rounded-full bg-[#2d7a52]/30 blur-xl" />
+          {/* content */}
+          <div className="absolute inset-0 flex flex-col justify-between p-5">
+            <div className="bg-cream/10 inline-flex w-fit items-center gap-1.5 rounded-full px-3 py-1">
+              <Leaf className="text-cream/70 h-3 w-3" />
+              <span className="text-cream/70 text-[10px] font-semibold tracking-widest uppercase">
+                Your Space
+              </span>
+            </div>
+            <div>
+              <p className="font-heading text-cream text-xl font-bold leading-snug">
+                My Sustainable Space
+              </p>
+              <p className="text-cream/50 mt-1 text-xs">Scan & redesign with AI-powered vision</p>
+            </div>
           </div>
         </div>
       </div>
