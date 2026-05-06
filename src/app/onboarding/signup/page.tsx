@@ -23,8 +23,8 @@ export default function SignInPage() {
 
       {/* Card */}
       <div className="w-full max-w-sm rounded-2xl bg-white p-7 shadow-sm">
-        <h2 className="font-heading text-charcoal text-2xl font-bold">Welcome Back</h2>
-        <p className="text-stone mt-1 mb-6 text-sm">Sign in to manage your workshop.</p>
+        <h2 className="font-heading text-charcoal text-2xl font-bold">Create Account</h2>
+        <p className="text-stone mt-1 mb-6 text-sm">Sign up to manage your workshop.</p>
 
         <div className="space-y-4">
           {/* Email */}
@@ -51,9 +51,9 @@ export default function SignInPage() {
             <Input type="password" placeholder="••••••••" className="bg-cream border-border" />
           </div>
 
-          {/* Sign In Button */}
+          {/* Sign Up Button */}
           <Button className="bg-forest hover:bg-forest/90 text-cream mt-2 w-full font-semibold">
-            Sign In →
+            Sign Up →
           </Button>
 
           {/* Divider */}
@@ -76,9 +76,9 @@ export default function SignInPage() {
 
       {/* Footer */}
       <p className="text-stone mt-6 text-sm">
-        Don&apos;t have an account?{' '}
-        <Link href="/onboarding/signup" className="text-terracotta font-semibold hover:underline">
-          Sign up
+        Already have an account?{' '}
+        <Link href="/onboarding/signin" className="text-terracotta font-semibold hover:underline">
+          Sign in
         </Link>
       </p>
     </div>

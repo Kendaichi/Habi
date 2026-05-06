@@ -161,6 +161,17 @@ model Room {
   @@index([userId])
 }
 
+model MaterialRequest {
+  id           String        @id @default(cuid())
+  materialType String
+  quantityKg   Float
+  dateNeeded   DateTime
+  description  String?
+  photoUrl     String?
+  status       RequestStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
+}
+
 enum Role {
   BUYER
   ARTISAN
@@ -205,15 +216,4 @@ enum RefurbStatus {
   IN_USE
   AWAITING
   REFURBISHING
-}
-
-model MaterialRequest {
-  id           String        @id @default(cuid())
-  materialType String
-  quantityKg   Float
-  dateNeeded   DateTime
-  description  String?
-  photoUrl     String?
-  status       RequestStatus @default(PENDING)
-  createdAt    DateTime      @default(now())
 }
