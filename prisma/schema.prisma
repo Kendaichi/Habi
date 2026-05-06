@@ -121,7 +121,7 @@ model RoomScan {
   analysis        Json?
   roomId          String   @unique
   buyer           User     @relation(fields: [buyerId], references: [id])
-  room            Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  Room            Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   @@index([buyerId])
 }

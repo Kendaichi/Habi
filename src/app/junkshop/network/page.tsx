@@ -1,35 +1,18 @@
 import { MapPin, Heart, Leaf } from 'lucide-react'
 import { TopNav } from '@/components/junkshop/TopNav'
 import { BottomNav } from '@/components/junkshop/BottomNav'
+import { prisma } from '@/lib/prisma'
+import { Role } from '@/generated/prisma/enums'
 
-const artisans = [
-  {
-    name: 'Maria Santos',
-    specialty: 'Master Weaver',
-    distance: '2.4km',
-    materials: ['Plastic Bottles', 'Natural Rattan'],
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuACqCl-UpMTfUiJ5UeP0zoaZ8eGS5eVY8pib3Ji1N8DsNmXA4q5BhbFveof4O7jJ7kcjx6j6ZgTyKkFO31OoLv4aVWVlYB9kpU-SYNaf3rZOWwYRtIogR708Xsqbfpqu9SC5rG6V50qti43qZXfv0mroUF_S_TnSWmfDI-3wEXE78oZZvxSVS1y5m94UdgDroFSOXdmDI-ahxTQ6Ph0zwhZYmdCV-WjKbg4HeyBP02MShxyZEPYNFN6F9L5NnZooKLo1t4k7uXaJjBX',
-  },
-  {
-    name: 'Juan Dela Cruz',
-    specialty: 'Metal Sculptor',
-    distance: '0.8km',
-    materials: ['Scrap Steel', 'Aluminum Cans'],
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCdFaAfgGGb9LlgOubuR3cMyGXWeJBdksNTf3fN4jlhzOF58hJm6jyPFGleQ7GgAQriRufdE9PGkwxvfD_ZVVVPJxW6frAxIhovia2PS0w9TTVvLeeEG4-_YoWLpLnYrbAf_0iY-q5ndGADEryvPOl14_2XGYC5VY8pL6cBcNdiZH4X2ddbZVsQ-lvTls_27-kqZoaDqsK08hZi6NBllrTAnvhvzdFvvVHBBq33mi4Ki8bs1a0yKxwCoCTPIWwdhqLIQ9ok0rwx3uLq',
-  },
-  {
-    name: 'Elena Garcia',
-    specialty: 'Textile Artist',
-    distance: '3.2km',
-    materials: ['Denim Scraps', 'Cotton Waste'],
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDtRkoH2fg_wqkyWKmTAT9iTyP8j3g7wEYLV-AaWVj9lawDxir3QlXudtlFWb96bOM2i5QcOsVlCEPKdSHGIXyVtZP2NWHictagu3plYeztv_liqrzv9QdxhzVI3UZErjoR-OpLtWtesLjRDfy4qbnbnVLT9yo8ygN1RSvfMOpH0gVEsmsZ3d4Ml2dS61huvmRKLVyEpR9DkQqbhXv3kawU13tMK4u2hhGIj2v8qFfD6Sys8Pxy0XrhIHIlR8ed0BM97UFxF3mv9lHV',
-  },
-]
+export default async function JunkshopNetworkPage() {
+  const artisans = await prisma.user.findMany({
+    where: { role: Role.ARTISAN },
+    include: {
+      products: { select: { materialType: true }, distinct: ['materialType'] },
+    },
+    orderBy: { name: 'asc' },
+  })
 
-export default function JunkshopNetworkPage() {
   return (
     <div className="bg-cream min-h-screen">
       <TopNav />
@@ -49,7 +32,8 @@ export default function JunkshopNetworkPage() {
                   Artisans Near You
                 </h2>
                 <p className="text-white/90">
-                  Discover 12 master crafters within 5km of your junk shop.
+                  Discover {artisans.length} master crafter{artisans.length !== 1 ? 's' : ''} ready
+                  to source from your hub.
                 </p>
               </div>
             </div>
@@ -67,59 +51,72 @@ export default function JunkshopNetworkPage() {
 
         {/* Artisan Grid */}
         <section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {artisans.map((artisan) => (
-            <div
-              key={artisan.name}
-              className="flex flex-col rounded-[20px] border border-stone-100 bg-white p-6 shadow-[0px_4px_20px_rgba(44,44,44,0.08)] transition-shadow hover:shadow-[0px_8px_30px_rgba(44,44,44,0.12)]"
-            >
-              <div className="mb-6 flex items-start justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="h-16 w-16 overflow-hidden rounded-2xl shadow-sm">
-                    <img
-                      alt={artisan.name}
-                      className="h-full w-full object-cover"
-                      src={artisan.image}
-                    />
-                  </div>
-                  <div>
-                    <h3 className="text-charcoal font-['Noto_Serif'] text-xl font-semibold">
-                      {artisan.name}
-                    </h3>
-                    <p className="text-forest text-sm font-medium">{artisan.specialty}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 rounded-full bg-stone-50 px-3 py-1 text-sm text-stone-600">
-                  <MapPin className="h-3.5 w-3.5" />
-                  <span>{artisan.distance}</span>
-                </div>
-              </div>
+          {artisans.map((artisan) => {
+            const initials = artisan.name
+              .split(' ')
+              .map((n) => n[0])
+              .join('')
+              .slice(0, 2)
+              .toUpperCase()
+            const materials = artisan.products.map((p) => p.materialType)
 
-              <div className="mb-6 grow">
-                <p className="mb-2 text-[10px] font-bold tracking-wider text-stone-400 uppercase">
-                  Top Materials Used
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {artisan.materials.map((mat) => (
-                    <span
-                      key={mat}
-                      className="rounded-full bg-stone-100 px-3 py-1 text-sm font-medium text-stone-600"
-                    >
-                      {mat}
-                    </span>
-                  ))}
+            return (
+              <div
+                key={artisan.id}
+                className="flex flex-col rounded-[20px] border border-stone-100 bg-white p-6 shadow-[0px_4px_20px_rgba(44,44,44,0.08)] transition-shadow hover:shadow-[0px_8px_30px_rgba(44,44,44,0.12)]"
+              >
+                <div className="mb-6 flex items-start justify-between">
+                  <div className="flex items-center gap-4">
+                    {/* Avatar initials since no image in DB */}
+                    <div className="bg-forest/10 flex h-16 w-16 items-center justify-center rounded-2xl shadow-sm">
+                      <span className="text-forest font-['Noto_Serif'] text-xl font-bold">
+                        {initials}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-charcoal font-['Noto_Serif'] text-xl font-semibold">
+                        {artisan.name}
+                      </h3>
+                      <p className="text-forest text-sm font-medium">Verified Artisan</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 rounded-full bg-stone-50 px-3 py-1 text-sm text-stone-600">
+                    <MapPin className="h-3.5 w-3.5" />
+                    <span>Nearby</span>
+                  </div>
+                </div>
+
+                <div className="mb-6 grow">
+                  <p className="mb-2 text-[10px] font-bold tracking-wider text-stone-400 uppercase">
+                    Materials Used
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {materials.length > 0 ? (
+                      materials.map((mat) => (
+                        <span
+                          key={mat}
+                          className="rounded-full bg-stone-100 px-3 py-1 text-sm font-medium text-stone-600"
+                        >
+                          {mat}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-stone text-sm">No listings yet</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 border-t border-stone-100 pt-4">
+                  <button className="bg-terracotta flex-1 rounded-xl py-3 font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-[0.98]">
+                    Contact {artisan.name.split(' ')[0]}
+                  </button>
+                  <button className="border-forest text-forest hover:bg-forest/5 rounded-xl border-2 p-3 transition-colors">
+                    <Heart className="h-5 w-5" />
+                  </button>
                 </div>
               </div>
-
-              <div className="flex items-center gap-3 border-t border-stone-100 pt-4">
-                <button className="bg-terracotta flex-1 rounded-xl py-3 font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-[0.98]">
-                  Contact {artisan.name.split(' ')[0]}
-                </button>
-                <button className="border-forest text-forest hover:bg-forest/5 rounded-xl border-2 p-3 transition-colors">
-                  <Heart className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </section>
 
         {/* Stats Bento */}
@@ -140,7 +137,7 @@ export default function JunkshopNetworkPage() {
                 <p className="text-sm opacity-70">Waste Diverted</p>
               </div>
               <div>
-                <p className="font-['Space_Grotesk'] text-3xl font-semibold">15</p>
+                <p className="font-['Space_Grotesk'] text-3xl font-semibold">{artisans.length}</p>
                 <p className="text-sm opacity-70">Active Artisans</p>
               </div>
             </div>

@@ -1,88 +1,79 @@
-import { Recycle, Users, Truck, ChevronRight, ArrowRight } from 'lucide-react'
+import { Recycle, Users, Truck, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { TopNav } from '@/components/junkshop/TopNav'
 import { BottomNav } from '@/components/junkshop/BottomNav'
 import { DashboardSection } from '@/components/shared/DashboardSection'
+import { prisma } from '@/lib/prisma'
 
-const stats = [
-  {
-    label: 'Sorted This Month',
-    value: '1.2',
-    unit: 'tons',
-    icon: <Recycle className="text-forest/20 h-10 w-10" />,
-    valueClass: 'text-forest',
-  },
-  {
-    label: 'Artisans Served',
-    value: '24',
-    unit: null,
-    icon: <Users className="text-forest/20 h-10 w-10" />,
-    valueClass: 'text-forest',
-  },
-  {
-    label: 'Pickup Requests',
-    value: '8',
-    unit: null,
-    icon: <Truck className="text-terracotta/20 h-10 w-10" />,
-    valueClass: 'text-terracotta',
-  },
-]
+const JUNKSHOP_ID = 'junkshop-manila-plastic-hub'
 
-const inventory = [
-  {
-    label: 'Plastic',
-    sub: 'HDPE & PET Bottles',
-    amount: '450',
+const MATERIAL_STYLE: Record<
+  string,
+  { borderColor: string; iconBg: string; emoji: string; sub: string }
+> = {
+  Plastic: {
     borderColor: 'border-terracotta',
     iconBg: 'bg-terracotta/10',
-    iconColor: 'text-terracotta',
     emoji: '🧴',
+    sub: 'HDPE & PET Bottles',
   },
-  {
-    label: 'Metal',
-    sub: 'Aluminum & Scrap Iron',
-    amount: '120',
+  Metal: {
     borderColor: 'border-forest',
     iconBg: 'bg-forest/10',
-    iconColor: 'text-forest',
     emoji: '⚙️',
+    sub: 'Aluminum & Scrap Iron',
   },
-  {
-    label: 'Agri-waste',
-    sub: 'Coconut Husk & Fiber',
-    amount: '800',
+  Bamboo: {
     borderColor: 'border-mustard',
     iconBg: 'bg-mustard/10',
-    iconColor: 'text-mustard',
     emoji: '🌿',
+    sub: 'Bamboo & Timber Offcuts',
   },
-]
+  Textile: {
+    borderColor: 'border-stone-400',
+    iconBg: 'bg-stone-100',
+    emoji: '🧵',
+    sub: 'Fabric & Fiber Waste',
+  },
+  Glass: {
+    borderColor: 'border-sky-400',
+    iconBg: 'bg-sky-50',
+    emoji: '🫙',
+    sub: 'Glass Cullet',
+  },
+}
 
-const transactions = [
-  {
-    initials: 'ML',
-    name: 'Maria Lorena',
-    desc: 'Purchased 15kg Coconut Husk',
-    amount: '₱450.00',
-    time: '2 hours ago',
-  },
-  {
-    initials: 'JR',
-    name: 'Juan Reyes',
-    desc: 'Purchased 20kg HDPE Plastic',
-    amount: '₱1,200.00',
-    time: 'Yesterday',
-  },
-  {
-    initials: 'AD',
-    name: 'Ana Dela Cruz',
-    desc: 'Purchased 5kg Aluminum',
-    amount: '₱750.00',
-    time: 'Oct 24, 2023',
-  },
-]
+const DEFAULT_STYLE = {
+  borderColor: 'border-stone-300',
+  iconBg: 'bg-stone-100',
+  emoji: '📦',
+  sub: 'General Material',
+}
 
-export default function JunkshopDashboardPage() {
+export default async function JunkshopDashboardPage() {
+  const shop = await prisma.junkShop.findUnique({
+    where: { id: JUNKSHOP_ID },
+    include: {
+      materialsList: true,
+      traceChains: {
+        include: { product: true, artisan: true },
+        orderBy: { id: 'desc' },
+        take: 3,
+      },
+    },
+  })
+
+  const totalKg = shop?.materialsList.reduce((s, m) => s + m.quantityKg, 0) ?? 0
+  const totalTons = (totalKg / 1000).toFixed(1)
+  const artisansServed = new Set(shop?.traceChains.map((c) => c.artisanId)).size
+  const pickupRequests = shop?.traceChains.length ?? 0
+
+  const topMaterials = [...(shop?.materialsList ?? [])]
+    .sort((a, b) => b.quantityKg - a.quantityKg)
+    .slice(0, 3)
+
+  const recentActivity = shop?.traceChains ?? []
+
   return (
     <div className="bg-cream min-h-screen">
       <TopNav />
@@ -91,7 +82,9 @@ export default function JunkshopDashboardPage() {
         {/* Welcome */}
         <section className="mb-8">
           <h1 className="font-heading text-charcoal mb-2 text-3xl font-bold leading-tight md:text-5xl">
-            Welcome back,<br />Shop Owner
+            Welcome back,
+            <br />
+            {shop?.name ?? 'Shop Owner'}
           </h1>
           <p className="text-stone text-base">Your circular hub is thriving this month.</p>
         </section>
@@ -99,8 +92,8 @@ export default function JunkshopDashboardPage() {
         {/* Primary CTA */}
         <div className="mb-8">
           <Link
-            href="/junkshop/log"
-            className="bg-terracotta flex w-full items-center justify-center gap-3 rounded-xl px-8 py-4 font-semibold text-white shadow-lg transition-all hover:opacity-90 active:scale-95 md:w-auto md:inline-flex"
+            href="/junkshop/inventory/log"
+            className="bg-terracotta flex w-full items-center justify-center gap-3 rounded-xl px-8 py-4 font-semibold text-white shadow-lg transition-all hover:opacity-90 active:scale-95 md:inline-flex md:w-auto"
           >
             <span className="text-lg">+</span>
             Log New Sorted Material
@@ -109,25 +102,40 @@ export default function JunkshopDashboardPage() {
 
         {/* Stats Bento Grid */}
         <div className="mb-8 grid grid-cols-3 gap-3">
-          {stats.map((stat) => (
-            <div
-              key={stat.label}
-              className="bg-card border-border flex h-36 flex-col justify-between rounded-2xl border p-4 shadow-sm"
-            >
-              <span className="text-stone text-[10px] font-bold uppercase tracking-wide">
-                {stat.label}
+          <div className="bg-card border-border flex h-36 flex-col justify-between rounded-2xl border p-4 shadow-sm">
+            <span className="text-stone text-[10px] font-bold uppercase tracking-wide">
+              Sorted This Month
+            </span>
+            <div className="flex items-end justify-between">
+              <span className="font-heading text-forest text-3xl font-bold">
+                {totalTons}
+                <span className="text-stone ml-1 text-base font-normal">tons</span>
               </span>
-              <div className="flex items-end justify-between">
-                <span className={`font-heading text-3xl font-bold ${stat.valueClass}`}>
-                  {stat.value}
-                  {stat.unit && (
-                    <span className="text-stone ml-1 text-base font-normal">{stat.unit}</span>
-                  )}
-                </span>
-                {stat.icon}
-              </div>
+              <Recycle className="text-forest/20 h-10 w-10" />
             </div>
-          ))}
+          </div>
+
+          <div className="bg-card border-border flex h-36 flex-col justify-between rounded-2xl border p-4 shadow-sm">
+            <span className="text-stone text-[10px] font-bold uppercase tracking-wide">
+              Artisans Served
+            </span>
+            <div className="flex items-end justify-between">
+              <span className="font-heading text-forest text-3xl font-bold">{artisansServed}</span>
+              <Users className="text-forest/20 h-10 w-10" />
+            </div>
+          </div>
+
+          <div className="bg-card border-border flex h-36 flex-col justify-between rounded-2xl border p-4 shadow-sm">
+            <span className="text-stone text-[10px] font-bold uppercase tracking-wide">
+              Pickup Requests
+            </span>
+            <div className="flex items-end justify-between">
+              <span className="font-heading text-terracotta text-3xl font-bold">
+                {pickupRequests}
+              </span>
+              <Truck className="text-terracotta/20 h-10 w-10" />
+            </div>
+          </div>
         </div>
 
         {/* Banig Divider */}
@@ -151,63 +159,68 @@ export default function JunkshopDashboardPage() {
             </Link>
           </div>
           <div className="space-y-3">
-            {inventory.map((item) => (
-              <div
-                key={item.label}
-                className={`bg-card flex items-center justify-between rounded-2xl border-l-4 p-5 shadow-sm ${item.borderColor}`}
-              >
-                <div className="flex items-center gap-4">
+            {topMaterials.length === 0 ? (
+              <p className="text-stone py-6 text-center text-sm">No materials logged yet.</p>
+            ) : (
+              topMaterials.map((mat) => {
+                const style = MATERIAL_STYLE[mat.type] ?? DEFAULT_STYLE
+                return (
                   <div
-                    className={`flex h-12 w-12 items-center justify-center rounded-xl text-2xl ${item.iconBg}`}
+                    key={mat.id}
+                    className={`bg-card flex items-center justify-between rounded-2xl border-l-4 p-5 shadow-sm ${style.borderColor}`}
                   >
-                    {item.emoji}
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-xl text-2xl ${style.iconBg}`}
+                      >
+                        {style.emoji}
+                      </div>
+                      <div>
+                        <h4 className="text-charcoal text-base font-bold">{mat.type}</h4>
+                        <p className="text-stone text-sm">{style.sub}</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-charcoal font-heading text-2xl font-bold">
+                        {mat.quantityKg}
+                        <span className="text-stone ml-1 text-sm font-normal">kg</span>
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-charcoal text-base font-bold">{item.label}</h4>
-                    <p className="text-stone text-sm">{item.sub}</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="text-charcoal font-heading text-2xl font-bold">
-                    {item.amount}
-                    <span className="text-stone ml-1 text-sm font-normal">kg</span>
-                  </span>
-                </div>
-              </div>
-            ))}
+                )
+              })
+            )}
           </div>
         </DashboardSection>
 
-        {/* Recent Transactions */}
-        <DashboardSection title="Recent Transactions" className="mt-8">
+        {/* Recent Activity */}
+        <DashboardSection title="Recent Activity" className="mt-8">
           <div className="bg-card border-border rounded-3xl border p-6 shadow-sm">
-            <div className="space-y-5">
-              {transactions.map((tx, i) => (
-                <div
-                  key={tx.name}
-                  className={`flex items-center justify-between pb-5 ${
-                    i < transactions.length - 1 ? 'border-b border-stone-100' : 'pb-0'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-100 text-sm font-bold text-stone-600">
-                      {tx.initials}
+            {recentActivity.length === 0 ? (
+              <p className="text-stone py-4 text-center text-sm">No recent activity.</p>
+            ) : (
+              <div className="space-y-5">
+                {recentActivity.map((chain, i) => (
+                  <div
+                    key={chain.id}
+                    className={`flex items-center justify-between pb-5 ${
+                      i < recentActivity.length - 1 ? 'border-b border-stone-100' : 'pb-0'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-100 text-sm font-bold text-stone-600">
+                        {chain.artisan.name.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-charcoal text-sm font-semibold">{chain.artisan.name}</p>
+                        <p className="text-stone text-xs">Sourced for {chain.product.name}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-charcoal text-sm font-semibold">{tx.name}</p>
-                      <p className="text-stone text-xs">{tx.desc}</p>
-                    </div>
+                    <p className="text-stone text-[10px]">via traceability</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-forest text-sm font-bold">{tx.amount}</p>
-                    <p className="text-stone text-[10px]">{tx.time}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button className="text-stone hover:text-forest mt-4 w-full border-t border-stone-100 pt-4 text-sm font-medium transition-colors">
-              See All Activity
-            </button>
+                ))}
+              </div>
+            )}
           </div>
         </DashboardSection>
       </main>
