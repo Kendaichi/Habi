@@ -18,10 +18,10 @@ export function TopNav({ profileImage, shopName = 'Koronadal Recyclers' }: TopNa
         </div>
         <div className="flex flex-col">
           <span className="text-forest font-['Noto_Serif'] text-lg font-bold">Habi</span>
-          <div className="flex items-center gap-1">
+          {/* <div className="flex items-center gap-1">
             <span className="text-stone text-xs font-medium">{shopName}</span>
             <BadgeCheck className="text-forest h-3.5 w-3.5" fill="currentColor" strokeWidth={1.5} />
-          </div>
+          </div> */}
         </div>
       </div>
       <button className="text-stone transition-opacity hover:opacity-80" aria-label="Notifications">
