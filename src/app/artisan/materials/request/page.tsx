@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { ArrowLeft, ChevronDown, Upload, Info, Send } from 'lucide-react'
 import Link from 'next/link'
 import { BottomNav } from '@/components/artisan/BottomNav'
+import { submitMaterialRequest } from './actions'
 
 const MATERIAL_TYPES = [
   { value: 'abaca', label: 'Abaca Fiber' },
@@ -23,6 +24,7 @@ export default function RequestMaterialPage() {
     description: '',
   })
   const [fileName, setFileName] = useState('')
+  const [isPending, startTransition] = useTransition()
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
@@ -36,7 +38,14 @@ export default function RequestMaterialPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    // TODO: wire up to API
+    startTransition(() =>
+      submitMaterialRequest({
+        materialType: form.materialType,
+        quantityKg: parseFloat(form.quantity),
+        dateNeeded: form.dateNeeded,
+        description: form.description,
+      })
+    )
   }
 
   return (
@@ -189,9 +198,10 @@ export default function RequestMaterialPage() {
           {/* Submit */}
           <button
             type="submit"
-            className="bg-forest text-cream shadow-forest/20 hover:bg-forest/90 flex w-full items-center justify-center gap-3 rounded-2xl py-4 font-bold shadow-lg transition-all active:scale-[0.98]"
+            disabled={isPending}
+            className="bg-forest text-cream shadow-forest/20 hover:bg-forest/90 flex w-full items-center justify-center gap-3 rounded-2xl py-4 font-bold shadow-lg transition-all active:scale-[0.98] disabled:opacity-60"
           >
-            Broadcast Request
+            {isPending ? 'Sending…' : 'Broadcast Request'}
             <Send className="h-4 w-4" />
           </button>
         </form>

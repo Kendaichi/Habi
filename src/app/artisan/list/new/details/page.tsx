@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ArrowLeft, ArrowRight, Droplets, Sun, Shirt, Leaf, CheckCircle } from 'lucide-react'
 import { TopNav } from '@/components/artisan/TopNav'
 import { BottomNav } from '@/components/artisan/BottomNav'
+import { saveDraft } from '../draft'
 import type { LucideIcon } from 'lucide-react'
 
 interface CareOption {
@@ -26,6 +28,8 @@ const traceabilityDetails = [
 ]
 
 export default function NewListingDetailsPage() {
+  const router = useRouter()
+  const [name, setName] = useState('')
   const [story, setStory] = useState('')
   const [dims, setDims] = useState({ l: '', w: '', h: '' })
   const [care, setCare] = useState<string[]>([])
@@ -33,6 +37,11 @@ export default function NewListingDetailsPage() {
 
   const toggleCare = (id: string) =>
     setCare((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]))
+
+  function handleContinue() {
+    saveDraft({ name, description: story })
+    router.push('/artisan/list/new/review')
+  }
 
   return (
     <div className="bg-cream min-h-screen">
@@ -61,6 +70,18 @@ export default function NewListingDetailsPage() {
                 Describe the soul of your creation and help buyers care for it.
               </p>
             </div>
+
+            {/* Product Name */}
+            <section className="space-y-3">
+              <label className="text-charcoal block text-sm font-bold">Product Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Upcycled Rattan Storage Bin"
+                className="bg-card border-border focus:border-forest placeholder:text-stone w-full rounded-2xl border-b-2 p-4 text-sm transition-colors outline-none"
+              />
+            </section>
 
             {/* Product Story */}
             <section className="space-y-3">
@@ -142,13 +163,14 @@ export default function NewListingDetailsPage() {
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </Link>
-              <Link
-                href="/artisan/list/new/review"
-                className="bg-forest text-cream flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold shadow-lg transition-all hover:opacity-90 active:scale-95"
+              <button
+                onClick={handleContinue}
+                disabled={!name.trim()}
+                className="bg-forest text-cream flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold shadow-lg transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
               >
                 Continue to Review
                 <ArrowRight className="h-4 w-4" />
-              </Link>
+              </button>
             </div>
           </div>
 

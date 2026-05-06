@@ -3,42 +3,33 @@ import {
   Phone,
   Navigation,
   BadgeCheck,
-  Star,
   MapPin,
   Download,
   Package,
   RefreshCw,
   Sparkles,
+  Cog,
+  Leaf,
+  Layers,
 } from 'lucide-react'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
 import { BottomNav } from '@/components/artisan/BottomNav'
+import { prisma } from '@/lib/prisma'
 
-const inventory = [
-  {
-    name: 'HDPE Flakes',
-    price: '₱42/kg',
-    qty: '450 kg',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAY3Pe9_JCJAG5hpQ8VM1ybmRIcNv3izEBeDLBiBv0xmwMqjG2Rqnk6b2y3CCw6590QQItpbsWWgSKjBSknt_XjapHgkTirsMjR-GIjBJWM9yDZtt_ajWEjlKavUUxS7S1L2tpUNfQaGRfR_hrjWRBFisIfme07w5mz0Ntng4pP_cMlqad5ulSY81Whjhef5HQAJIyqq2H8nB5tDwVF_iKZxpjjfKhlmg8KyYfHRhv_GGpXOXa3TIwFJ0emZuZxdPg4zyqa3iMp4ca2',
-  },
-  {
-    name: 'Clear PET',
-    price: '₱18/kg',
-    qty: '1,200 kg',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAeESIM0SO3D_OFUu8hbsLfCj1ikD22gVjIml9R87WFwUUbNqOBE3UfoF_aJ_jB1JL-15MhNs2vnM_62KAZ402d2piDDgUD0EYS8MGpDnGvwtkhX9lecXg4M-HhdZuyPW71B1HrdtpUgDlcYRjmb9HpoJ-LJZbdZfu-dE_e6_WLpxYR2jU6fYloHVjVFN58G9_6JDKDqYgd-nqxtB_VYPNaLflJ0kF5f0w3D0ef2T7rVAf3FP2zu3Ga3v3ukaYT6QHSsqnp1qm1O3lu',
-  },
-  {
-    name: 'Corrugated Box',
-    price: '₱8.50/kg',
-    qty: '3,400 kg',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDXRgsIzjMPZ4MFKHW_NqvYiU8hsWm8hO6Nn1j92Q89FQoqQDXcexAZrLJIZ2XiKXwNOf_BnoiVvg-gfnrImv5Kx6digPxkfZ8EE7Zf_5RxQ1ffs3UE6AgfCJdOPqzswWkuB1PIJoSbgN7AkIv7o0XBAKViG1MGH5p2WkwHfrZlyNl42VmbbJKCxhZUWrfgHw_DMI0ZYQOZYnOR8liWqmSHeQ5SeMEZqF_yd2sMtlMJc3z80sEjqBHzEu2HZIJUufEgIAAG-9m6',
-  },
-  {
-    name: 'Mixed Metals',
-    price: '₱115/kg',
-    qty: '120 kg',
-    img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBBVXb2wo2B8AHy9vldS-yzOEtJg9YTHlkZ7aNHiwv7SN7rSubP4SHWAUF0mpac7G3px5Ubwk8D3agpP2ghvq17JdhcQ53daTtM8QBsoLCpWLlxPKtOVbjPX2OKLVVOSXLNP8BtP73y3Mg6fRgB0OcOYd4cCgTrPwJgMsKvO0XErxM9DV3wrL7WYkvsk1_Y9XxR9_uB_uIT_k9vemuTUMeoC5sRYo9XQfaghmntqFShk4o7H6hqlc-CktC2HKDB3GC0SRxt9EW9StX5',
-  },
-]
+const MATERIAL_ICON: Record<string, React.ReactNode> = {
+  Plastic: <Package className="h-6 w-6" />,
+  Metal: <Cog className="h-6 w-6" />,
+  Bamboo: <Leaf className="h-6 w-6" />,
+  Textile: <Layers className="h-6 w-6" />,
+}
+
+const MATERIAL_BG: Record<string, string> = {
+  Plastic: 'bg-terracotta/10 text-terracotta',
+  Metal: 'bg-stone/10 text-stone',
+  Bamboo: 'bg-forest/10 text-forest',
+  Textile: 'bg-mustard/10 text-mustard',
+}
 
 const processSteps = [
   {
@@ -73,11 +64,20 @@ const galleryImgs = [
 ]
 
 export default async function HubDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-  await params
+  const { id } = await params
+
+  const shop = await prisma.junkShop.findUnique({
+    where: { id },
+    include: { materialsList: { where: { available: true } } },
+  })
+
+  if (!shop) notFound()
+
+  const isVerified = shop.verifiedAt !== null
+  const address = shop.address ?? shop.city
 
   return (
     <div className="bg-cream min-h-screen pb-28">
-      {/* Header */}
       <header className="border-border bg-cream/90 sticky top-0 z-40 flex h-14 items-center justify-between border-b px-5 backdrop-blur-sm">
         <Link href="/artisan/materials" className="text-forest hover:bg-forest/10 rounded-full p-2">
           <ArrowLeft className="h-5 w-5" />
@@ -90,26 +90,17 @@ export default async function HubDetailsPage({ params }: { params: Promise<{ id:
         {/* Hero */}
         <section>
           <div className="mb-4 flex items-center gap-2">
-            <span className="bg-forest/10 text-forest flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase">
-              <BadgeCheck className="h-3 w-3" />
-              Verified Hub
-            </span>
-            <div className="text-mustard flex items-center gap-0.5">
-              {[...Array(4)].map((_, i) => (
-                <Star key={i} className="fill-mustard h-3.5 w-3.5" />
-              ))}
-              <Star className="fill-mustard/40 h-3.5 w-3.5" />
-              <span className="text-stone ml-1 text-xs">(4.9/5)</span>
-            </div>
+            {isVerified && (
+              <span className="bg-forest/10 text-forest flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase">
+                <BadgeCheck className="h-3 w-3" />
+                Verified Hub
+              </span>
+            )}
           </div>
 
           <h1 className="font-heading text-forest mb-2 text-3xl leading-tight font-bold">
-            Koronadal Recyclers
+            {shop.name}
           </h1>
-          <p className="text-stone mb-6 text-sm leading-relaxed">
-            An artisanal approach to waste management in South Cotabato. We transform discarded
-            materials into pristine resources through indigenous wisdom and modern technology.
-          </p>
 
           <div className="flex gap-3">
             <button className="bg-forest text-cream hover:bg-forest/90 flex flex-1 items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold shadow-lg transition-all active:scale-95">
@@ -122,30 +113,13 @@ export default async function HubDetailsPage({ params }: { params: Promise<{ id:
             </button>
           </div>
 
-          {/* Hub image */}
-          <div className="group relative mt-6 aspect-4/3 overflow-hidden rounded-3xl shadow-xl">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4iqbk--auG-6iHrCCy_XwPiPsZAwFuM5fJQJzGIHYjR8qCJ7byzPSp5o7FHxoZnOtxMPwdZ9bMpHFEgUmzAZ4U_34XjhHt5mEblQ9Z3dwLhG5Eokt_N_juzm_tvMkwqs5Q44-LIK2-vpJkVCoRWmAZYhEhdNP7PdMyx1jNfKEhxvcO0EzVqT9DIt7KxhGIvkkpo0fgmMjO1WXYaVjSx9WdArg7d6C_BmBE-Nli6u98KSSmh0XeFdh2mze3oxenjyLsSqPwNYIfrW9"
-              alt="Koronadal Recyclers facility"
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-            <div className="absolute right-4 bottom-4 left-4 flex items-center gap-3 rounded-2xl bg-white/90 p-3 backdrop-blur-md">
-              <div className="bg-muted h-12 w-12 overflow-hidden rounded-xl">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGI5gFGaOAz764M-0vlpn9bdpgwKF3zvmJxyncoRad6mSxLDmfsJH35ec1qRwtE4chKe-hahnqkI8LLLEEj7HOcnu43EsqdMsh-YfYpJscYSmPKFRtfG8di1-BPzcO1O8CdPL-i-SCn2DT9zCMSBvpntoX4j2eGfLE9Tarqcp_YN_Z46_sOqe-X9yp5dEGifpqGTeBwTRXpsay9aDSGsangT72fhJo_QtOMAriuht2DlYPU9HLZZnsdFGFq4sv8rW-RsJN5iHfVXPX"
-                  alt="Map"
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <div>
-                <p className="text-terracotta text-[10px] font-bold tracking-wider uppercase">
-                  Location
-                </p>
-                <p className="text-charcoal text-sm font-bold">General Santos Drive, Koronadal</p>
-              </div>
-              <MapPin className="text-stone ml-auto h-4 w-4" />
+          <div className="border-border mt-6 flex items-center gap-3 rounded-2xl border bg-white p-4">
+            <MapPin className="text-terracotta h-5 w-5 shrink-0" />
+            <div>
+              <p className="text-terracotta text-[10px] font-bold tracking-wider uppercase">
+                Location
+              </p>
+              <p className="text-charcoal text-sm font-bold">{address}</p>
             </div>
           </div>
         </section>
@@ -178,45 +152,53 @@ export default async function HubDetailsPage({ params }: { params: Promise<{ id:
           <div className="mb-6 flex items-end justify-between">
             <div>
               <h3 className="font-heading text-forest text-xl font-bold">Live Inventory</h3>
-              <p className="text-stone text-xs">Updated today at 8:30 AM</p>
+              <p className="text-stone text-xs">Available materials from this hub</p>
             </div>
             <button className="text-forest flex items-center gap-1 text-xs font-semibold hover:underline">
               Download Price List
               <Download className="h-3.5 w-3.5" />
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            {inventory.map((item) => (
-              <div
-                key={item.name}
-                className="group overflow-hidden rounded-3xl bg-white shadow-sm transition-all hover:shadow-md"
-              >
-                <div className="bg-muted aspect-square overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={item.img}
-                    alt={item.name}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                </div>
-                <div className="p-4">
-                  <div className="mb-1 flex items-start justify-between gap-1">
-                    <h5 className="font-heading text-charcoal text-sm leading-snug font-bold">
-                      {item.name}
-                    </h5>
-                    <span className="text-mustard shrink-0 text-xs font-bold">{item.price}</span>
+
+          {shop.materialsList.length === 0 ? (
+            <p className="text-stone py-8 text-center text-sm">No materials available right now.</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              {shop.materialsList.map((item) => {
+                const colorClass = MATERIAL_BG[item.type] ?? 'bg-stone/10 text-stone'
+                const icon = MATERIAL_ICON[item.type] ?? <Package className="h-6 w-6" />
+                return (
+                  <div
+                    key={item.id}
+                    className="group overflow-hidden rounded-3xl bg-white shadow-sm transition-all hover:shadow-md"
+                  >
+                    <div className={`flex aspect-square items-center justify-center ${colorClass}`}>
+                      {icon}
+                    </div>
+                    <div className="p-4">
+                      <div className="mb-1 flex items-start justify-between gap-1">
+                        <h5 className="font-heading text-charcoal text-sm leading-snug font-bold">
+                          {item.type}
+                        </h5>
+                        <span className="text-mustard shrink-0 text-xs font-bold">
+                          ₱{item.pricePerKg}/kg
+                        </span>
+                      </div>
+                      <div className="text-stone mb-3 flex items-center gap-1.5">
+                        <Package className="h-3.5 w-3.5" />
+                        <span className="text-[11px] font-semibold">
+                          {item.quantityKg}kg Available
+                        </span>
+                      </div>
+                      <button className="border-forest text-forest hover:bg-forest hover:text-cream w-full rounded-xl border py-2 text-xs font-bold transition-colors">
+                        Add to Quote
+                      </button>
+                    </div>
                   </div>
-                  <div className="text-stone mb-3 flex items-center gap-1.5">
-                    <Package className="h-3.5 w-3.5" />
-                    <span className="text-[11px] font-semibold">{item.qty} Available</span>
-                  </div>
-                  <button className="border-forest text-forest hover:bg-forest hover:text-cream w-full rounded-xl border py-2 text-xs font-bold transition-colors">
-                    Add to Quote
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                )
+              })}
+            </div>
+          )}
         </section>
 
         {/* Gallery */}

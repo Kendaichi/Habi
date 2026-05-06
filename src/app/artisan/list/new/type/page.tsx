@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { ShoppingBag, CalendarDays, History, ArrowLeft, ArrowRight, Leaf } from 'lucide-react'
 import { TopNav } from '@/components/artisan/TopNav'
 import { BottomNav } from '@/components/artisan/BottomNav'
+import { saveDraft } from '../draft'
 import type { LucideIcon } from 'lucide-react'
 
 interface ListingType {
@@ -44,6 +46,7 @@ const listingTypes: ListingType[] = [
 ]
 
 export default function NewListingTypePage() {
+  const router = useRouter()
   const [selected, setSelected] = useState<string[]>([])
   const [salePrice, setSalePrice] = useState('')
   const [dailyRate, setDailyRate] = useState('')
@@ -53,6 +56,17 @@ export default function NewListingTypePage() {
 
   const toggle = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]))
+
+  function handleContinue() {
+    const listings = selected.flatMap((id) => {
+      if (id === 'sale' && salePrice) return [{ type: 'SALE', price: parseFloat(salePrice) }]
+      if (id === 'rent' && dailyRate) return [{ type: 'RENT', price: parseFloat(dailyRate) }]
+      if (id === 'lease' && monthlyFee) return [{ type: 'LEASE', price: parseFloat(monthlyFee) }]
+      return []
+    })
+    saveDraft({ listings })
+    router.push('/artisan/list/new/details')
+  }
 
   return (
     <div className="bg-cream min-h-screen">
@@ -232,13 +246,14 @@ export default function NewListingTypePage() {
             <ArrowLeft className="h-4 w-4" />
             Back
           </Link>
-          <Link
-            href="/artisan/list/new/details"
-            className="bg-forest text-cream flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold shadow-lg transition-all hover:opacity-90 active:scale-95"
+          <button
+            onClick={handleContinue}
+            disabled={selected.length === 0}
+            className="bg-forest text-cream flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold shadow-lg transition-all hover:opacity-90 active:scale-95 disabled:opacity-40"
           >
             Continue to Details
             <ArrowRight className="h-4 w-4" />
-          </Link>
+          </button>
         </div>
       </div>
 

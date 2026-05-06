@@ -1,10 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import Link from 'next/link'
 import { Upload, ArrowLeft, Recycle, Wrench, Building2, CheckCircle } from 'lucide-react'
 import { TopNav } from '@/components/artisan/TopNav'
 import { BottomNav } from '@/components/artisan/BottomNav'
+import { readDraft, clearDraft } from '../draft'
+import { publishListing } from '../actions'
+import type { ListingDraft } from '../draft'
 import type { LucideIcon } from 'lucide-react'
 
 interface ChainNode {
@@ -43,8 +46,40 @@ const chain: ChainNode[] = [
   },
 ]
 
+const TYPE_LABEL: Record<string, string> = {
+  SALE: 'Direct Sale',
+  RENT: 'Short-term Rent',
+  LEASE: 'Long-term Lease',
+}
+
 export default function NewListingReviewPage() {
   const [agreed, setAgreed] = useState(false)
+  const [isPending, startTransition] = useTransition()
+  const [draft, setDraft] = useState<Partial<ListingDraft>>({})
+
+  useEffect(() => {
+    setDraft(readDraft())
+  }, [])
+
+  const primaryListing = draft.listings?.[0]
+  const priceFormatted = primaryListing
+    ? `₱${primaryListing.price.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`
+    : '—'
+  const typeLabel = primaryListing ? (TYPE_LABEL[primaryListing.type] ?? primaryListing.type) : '—'
+  const canPublish = agreed && !!draft.name && !!draft.materialType && !!draft.listings?.length
+
+  function handlePublish() {
+    if (!canPublish) return
+    startTransition(() => {
+      clearDraft()
+      return publishListing({
+        name: draft.name!,
+        description: draft.description ?? '',
+        materialType: draft.materialType!,
+        listings: draft.listings!,
+      })
+    })
+  }
 
   return (
     <div className="bg-cream min-h-screen">
@@ -90,22 +125,33 @@ export default function NewListingReviewPage() {
                   Ready to Weave
                 </span>
                 <h3 className="font-heading text-charcoal mt-3 text-lg font-bold">
-                  Upcycled Rattan Storage Bin
+                  {draft.name || '—'}
                 </h3>
                 <p className="text-stone mt-1 text-sm">
-                  Sourced from local artisan cooperatives in Pangasinan.
+                  {draft.materialType ? `Materials: ${draft.materialType}` : ''}
                 </p>
                 <div className="mt-4 space-y-3">
                   <div className="border-border flex items-center justify-between border-b pb-3">
                     <span className="text-stone text-xs font-medium">Listing Type</span>
-                    <span className="text-forest text-xs font-semibold">Direct Sale</span>
+                    <span className="text-forest text-xs font-semibold">{typeLabel}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-stone text-xs font-medium">Price Point</span>
                     <span className="font-heading text-terracotta text-lg font-bold">
-                      ₱1,250.00
+                      {priceFormatted}
                     </span>
                   </div>
+                  {draft.listings && draft.listings.length > 1 && (
+                    <div className="border-border border-t pt-3">
+                      <span className="text-stone text-xs font-medium">Also listed as: </span>
+                      <span className="text-forest text-xs font-semibold">
+                        {draft.listings
+                          .slice(1)
+                          .map((l) => TYPE_LABEL[l.type] ?? l.type)
+                          .join(', ')}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -185,11 +231,12 @@ export default function NewListingReviewPage() {
         {/* Action Buttons */}
         <div className="mt-10 flex flex-col gap-3 sm:flex-row">
           <button
-            disabled={!agreed}
+            onClick={handlePublish}
+            disabled={!canPublish || isPending}
             className="bg-forest text-cream flex flex-1 items-center justify-center gap-2 rounded-full py-4 text-sm font-semibold shadow-lg transition-all hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Upload className="h-4 w-4" />
-            Publish Listing
+            {isPending ? 'Publishing…' : 'Publish Listing'}
           </button>
           <Link
             href="/artisan/list"
