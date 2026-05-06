@@ -2,27 +2,25 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Bell, ChevronDown, Scale, Link, Camera, Package } from 'lucide-react'
+import { ArrowLeft, Bell, ChevronDown, Scale, Package, Camera } from 'lucide-react'
 import { BottomNav } from '@/components/junkshop/BottomNav'
+import { logMaterial } from './actions'
 
 type Grade = 'Premium' | 'Standard' | 'Utility'
 
 const GRADES: Grade[] = ['Premium', 'Standard', 'Utility']
 
-const CATEGORIES = [
-  'Plastic (HDPE/PET)',
-  'Metal (Aluminum/Steel)',
-  'Agri-waste (Abaca/Pineapple)',
-  'Textile Scraps',
-  'Glass Cullet',
-]
+const CATEGORIES = ['Plastic', 'Metal', 'Bamboo', 'Textile', 'Glass']
 
 export default function LogMaterialPage() {
   const router = useRouter()
-  const [category, setCategory] = useState('')
-  const [weight, setWeight] = useState('')
   const [grade, setGrade] = useState<Grade>('Premium')
-  const [source, setSource] = useState('')
+  const [pending, setPending] = useState(false)
+
+  async function handleSubmit(formData: FormData) {
+    setPending(true)
+    await logMaterial(formData)
+  }
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#fdf9f3]">
@@ -73,7 +71,7 @@ export default function LogMaterialPage() {
             }}
           />
 
-          <form className="relative z-10 space-y-8" onSubmit={(e) => e.preventDefault()}>
+          <form className="relative z-10 space-y-8" action={handleSubmit}>
             {/* Category + Weight */}
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2">
@@ -82,13 +80,15 @@ export default function LogMaterialPage() {
                 </label>
                 <div className="relative">
                   <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
+                    name="category"
+                    required
                     className="w-full appearance-none rounded-xl border border-stone-200 bg-[#fdf9f3] px-4 py-3 font-['Inter'] text-base text-[#1c1c18] transition-all outline-none focus:border-[#00452a] focus:ring-2 focus:ring-[#00452a]"
                   >
                     <option value="">Select Category</option>
                     {CATEGORIES.map((c) => (
-                      <option key={c}>{c}</option>
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
                     ))}
                   </select>
                   <ChevronDown className="pointer-events-none absolute top-1/2 right-4 h-4 w-4 -translate-y-1/2 text-stone-400" />
@@ -102,8 +102,10 @@ export default function LogMaterialPage() {
                 <div className="relative">
                   <input
                     type="number"
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
+                    name="weight"
+                    min="0.01"
+                    step="0.01"
+                    required
                     placeholder="0.00"
                     className="w-full rounded-xl border border-stone-200 bg-[#fdf9f3] px-4 py-3 pr-12 font-['Inter'] text-base text-[#1c1c18] transition-all outline-none focus:border-[#00452a] focus:ring-2 focus:ring-[#00452a]"
                   />
@@ -112,7 +114,28 @@ export default function LogMaterialPage() {
               </div>
             </div>
 
-            {/* Quality Grade */}
+            {/* Price per kg */}
+            <div className="space-y-2">
+              <label className="block font-['Inter'] text-[12px] font-bold tracking-widest text-stone-500 uppercase">
+                Price per kg (₱)
+              </label>
+              <div className="relative">
+                <span className="absolute top-1/2 left-4 -translate-y-1/2 font-['Inter'] text-stone-400">
+                  ₱
+                </span>
+                <input
+                  type="number"
+                  name="pricePerKg"
+                  min="0.01"
+                  step="0.01"
+                  required
+                  placeholder="0.00"
+                  className="w-full rounded-xl border border-stone-200 bg-[#fdf9f3] py-3 pr-4 pl-8 font-['Inter'] text-base text-[#1c1c18] transition-all outline-none focus:border-[#00452a] focus:ring-2 focus:ring-[#00452a]"
+                />
+              </div>
+            </div>
+
+            {/* Quality Grade (UI only — not persisted) */}
             <div className="space-y-3">
               <label className="block font-['Inter'] text-[12px] font-bold tracking-widest text-stone-500 uppercase">
                 Quality Grade
@@ -124,6 +147,7 @@ export default function LogMaterialPage() {
                       type="radio"
                       name="grade"
                       className="sr-only"
+                      value={g}
                       checked={grade === g}
                       onChange={() => setGrade(g)}
                     />
@@ -144,24 +168,7 @@ export default function LogMaterialPage() {
               </p>
             </div>
 
-            {/* Source / Supplier */}
-            <div className="space-y-2">
-              <label className="block font-['Inter'] text-[12px] font-bold tracking-widest text-stone-500 uppercase">
-                Source / Supplier
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={source}
-                  onChange={(e) => setSource(e.target.value)}
-                  placeholder="Community source name or local junk shop ID"
-                  className="w-full rounded-xl border border-stone-200 bg-[#fdf9f3] px-4 py-3 pr-12 font-['Inter'] text-base text-[#1c1c18] transition-all outline-none focus:border-[#00452a] focus:ring-2 focus:ring-[#00452a]"
-                />
-                <Link className="absolute top-1/2 right-4 h-4 w-4 -translate-y-1/2 text-stone-400" />
-              </div>
-            </div>
-
-            {/* Photo Upload */}
+            {/* Photo Upload (UI only) */}
             <div className="space-y-2">
               <label className="block font-['Inter'] text-[12px] font-bold tracking-widest text-stone-500 uppercase">
                 Visual Verification
@@ -170,9 +177,7 @@ export default function LogMaterialPage() {
                 <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm">
                   <Camera className="text-forest h-8 w-8" strokeWidth={1.5} />
                 </div>
-                <h4 className="font-['Inter'] font-semibold text-[#1c1c18]">
-                  Upload Material Pile
-                </h4>
+                <h4 className="font-['Inter'] font-semibold text-[#1c1c18]">Upload Material Pile</h4>
                 <p className="mt-1 text-sm text-stone-500">
                   Snap a clear photo of the sorted items for quality assurance.
                 </p>
@@ -183,10 +188,11 @@ export default function LogMaterialPage() {
             <div className="pt-4">
               <button
                 type="submit"
-                className="bg-terracotta flex w-full items-center justify-center gap-2 rounded-2xl py-4 font-['Inter'] font-semibold text-white shadow-[0_4px_12px_rgba(200,85,61,0.3)] transition-all hover:opacity-90 active:scale-95"
+                disabled={pending}
+                className="bg-terracotta flex w-full items-center justify-center gap-2 rounded-2xl py-4 font-['Inter'] font-semibold text-white shadow-[0_4px_12px_rgba(200,85,61,0.3)] transition-all hover:opacity-90 active:scale-95 disabled:opacity-60"
               >
                 <Package className="h-5 w-5" />
-                Save &amp; List
+                {pending ? 'Saving…' : 'Save & List'}
               </button>
               <p className="mt-4 text-center text-[13px] text-stone-400">
                 By listing, you agree to the Habi Circular Stewardship Guidelines.
@@ -199,18 +205,8 @@ export default function LogMaterialPage() {
         <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex items-center gap-4 rounded-2xl border border-stone-200/50 bg-[#ebe8e2] p-5">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#00452a]">
-              <svg
-                className="h-6 w-6"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.75}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                />
+              <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
               </svg>
             </div>
             <div>
@@ -223,18 +219,8 @@ export default function LogMaterialPage() {
 
           <div className="bg-forest flex items-center gap-4 rounded-2xl p-5">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/20">
-              <svg
-                className="h-6 w-6 text-[#aef1c8]"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={1.75}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"
-                />
+              <svg className="h-6 w-6 text-[#aef1c8]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
               </svg>
             </div>
             <div>
