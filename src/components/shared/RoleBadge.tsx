@@ -8,12 +8,14 @@ const styles: Record<UserRole, string> = {
   buyer: "bg-forest/10 text-forest",
   artisan: "bg-terracotta/10 text-terracotta",
   supplier: "bg-mustard/20 text-charcoal",
+  junkshop: "bg-stone/15 text-charcoal",
 }
 
 const labels: Record<UserRole, string> = {
   buyer: "Buyer",
   artisan: "Artisan",
   supplier: "Supplier",
+  junkshop: "Junkshop",
 }
 
 export function RoleBadge({ role }: RoleBadgeProps) {
