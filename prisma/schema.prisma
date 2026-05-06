@@ -7,6 +7,160 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id                      String              @id @default(cuid())
+  email                   String              @unique
+  name                    String
+  role                    Role
+  createdAt               DateTime            @default(now())
+  authId                  String?             @unique
+  customRequestsAsArtisan CustomRequest[]     @relation("ArtisanRequests")
+  customRequestsAsBuyer   CustomRequest[]     @relation("BuyerRequests")
+  orders                  Order[]
+  products                Product[]
+  rentals                 Rental[]
+  rooms                   Room[]
+  roomScans               RoomScan[]
+  traceabilityChains      TraceabilityChain[]
+}
+
+model Product {
+  id           String             @id @default(cuid())
+  name         String
+  description  String
+  images       String[]
+  materialType String
+  artisanId    String
+  createdAt    DateTime           @default(now())
+  listings     Listing[]
+  artisan      User               @relation(fields: [artisanId], references: [id])
+  traceability TraceabilityChain?
+}
+
+model Listing {
+  id        String        @id @default(cuid())
+  productId String
+  type      ListingType
+  price     Float
+  createdAt DateTime      @default(now())
+  status    ListingStatus @default(DRAFT)
+  views     Int           @default(0)
+  product   Product       @relation(fields: [productId], references: [id])
+  orders    Order[]
+  rentals   Rental[]
+}
+
+model JunkShop {
+  id            String              @id @default(cuid())
+  name          String
+  city          String
+  materials     String[]
+  verifiedAt    DateTime?
+  address       String?
+  materialsList Material[]
+  traceChains   TraceabilityChain[]
+}
+
+model TraceabilityChain {
+  id                String   @id @default(cuid())
+  productId         String   @unique
+  wasteSupplierName String
+  junkShopId        String
+  artisanId         String
+  artisan           User     @relation(fields: [artisanId], references: [id])
+  junkShop          JunkShop @relation(fields: [junkShopId], references: [id])
+  product           Product  @relation(fields: [productId], references: [id])
+}
+
+model Order {
+  id        String      @id @default(cuid())
+  buyerId   String
+  listingId String
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+  buyer     User        @relation(fields: [buyerId], references: [id])
+  listing   Listing     @relation(fields: [listingId], references: [id])
+}
+
+model Rental {
+  id           String       @id @default(cuid())
+  buyerId      String
+  listingId    String
+  startDate    DateTime
+  endDate      DateTime
+  returnedAt   DateTime?
+  refurbStatus RefurbStatus @default(IN_USE)
+  buyer        User         @relation(fields: [buyerId], references: [id])
+  listing      Listing      @relation(fields: [listingId], references: [id])
+}
+
+model DemandSignal {
+  id        String   @id @default(cuid())
+  keyword   String
+  city      String
+  count     Int      @default(1)
+  createdAt DateTime @default(now())
+}
+
+model Material {
+  id         String   @id @default(cuid())
+  junkShopId String
+  type       String
+  quantityKg Float
+  pricePerKg Float
+  available  Boolean  @default(true)
+  junkShop   JunkShop @relation(fields: [junkShopId], references: [id])
+}
+
+model RoomScan {
+  id              String   @id @default(cuid())
+  buyerId         String
+  imageUrl        String
+  recommendations String[]
+  createdAt       DateTime @default(now())
+  analysis        Json?
+  roomId          String   @unique
+  buyer           User     @relation(fields: [buyerId], references: [id])
+  Room            Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([buyerId])
+}
+
+model CustomRequest {
+  id          String        @id @default(cuid())
+  buyerId     String
+  artisanId   String
+  description String
+  budget      Float?
+  status      RequestStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  artisan     User          @relation("ArtisanRequests", fields: [artisanId], references: [id])
+  buyer       User          @relation("BuyerRequests", fields: [buyerId], references: [id])
+}
+
+model Room {
+  id                 String                 @id @default(cuid())
+  userId             String
+  imageUrl           String
+  generationStatus   Room3DGenerationStatus @default(PENDING)
+  roomTheme          String
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  sceneData          Json?
+  generationProvider String?
+  externalJobId      String?                @unique
+  worldAssetUrl      String?
+  worldAssetFormat   String?
+  previewImageUrl    String?
+  providerStatus     String?
+  providerError      String?
+  providerPayload    Json?
+  user               User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  RoomScan           RoomScan?
+
+  @@index([userId])
+}
+
 enum Role {
   BUYER
   ARTISAN
@@ -26,6 +180,12 @@ enum ListingType {
   LEASE
 }
 
+enum ListingStatus {
+  DRAFT
+  AVAILABLE
+  IN_USE
+}
+
 enum OrderStatus {
   PENDING
   CONFIRMED
@@ -41,136 +201,19 @@ enum RequestStatus {
   COMPLETED
 }
 
-model User {
-  id                      String          @id @default(cuid())
-  email                   String          @unique
-  name                    String
-  role                    Role
-  createdAt               DateTime        @default(now())
-  products                Product[]
-  orders                  Order[]
-  rentals                 Rental[]
-  roomScans               RoomScan[]
-  customRequestsAsBuyer   CustomRequest[] @relation("BuyerRequests")
-  customRequestsAsArtisan CustomRequest[] @relation("ArtisanRequests")
-  rooms                   Room[]
+enum RefurbStatus {
+  IN_USE
+  AWAITING
+  REFURBISHING
 }
 
-model Product {
-  id           String             @id @default(cuid())
-  name         String
-  description  String
-  images       String[]
+model MaterialRequest {
+  id           String        @id @default(cuid())
   materialType String
-  artisanId    String
-  artisan      User               @relation(fields: [artisanId], references: [id])
-  createdAt    DateTime           @default(now())
-  listings     Listing[]
-  traceability TraceabilityChain?
-}
-
-model Listing {
-  id        String      @id @default(cuid())
-  productId String
-  product   Product     @relation(fields: [productId], references: [id])
-  type      ListingType
-  price     Float
-  available Boolean     @default(true)
-  createdAt DateTime    @default(now())
-  orders    Order[]
-  rentals   Rental[]
-}
-
-model JunkShop {
-  id            String              @id @default(cuid())
-  name          String
-  city          String
-  materials     String[]
-  verifiedAt    DateTime?
-  traceChains   TraceabilityChain[]
-  materialsList Material[]
-}
-
-model TraceabilityChain {
-  id                String   @id @default(cuid())
-  productId         String   @unique
-  product           Product  @relation(fields: [productId], references: [id])
-  wasteSupplierName String
-  junkShopId        String
-  junkShop          JunkShop @relation(fields: [junkShopId], references: [id])
-  artisanId         String
-}
-
-model Order {
-  id        String      @id @default(cuid())
-  buyerId   String
-  buyer     User        @relation(fields: [buyerId], references: [id])
-  listingId String
-  listing   Listing     @relation(fields: [listingId], references: [id])
-  status    OrderStatus @default(PENDING)
-  createdAt DateTime    @default(now())
-}
-
-model Rental {
-  id         String    @id @default(cuid())
-  buyerId    String
-  buyer      User      @relation(fields: [buyerId], references: [id])
-  listingId  String
-  listing    Listing   @relation(fields: [listingId], references: [id])
-  startDate  DateTime
-  endDate    DateTime
-  returnedAt DateTime?
-}
-
-model DemandSignal {
-  id        String   @id @default(cuid())
-  keyword   String
-  city      String
-  count     Int      @default(1)
-  createdAt DateTime @default(now())
-}
-
-model Material {
-  id         String   @id @default(cuid())
-  junkShopId String
-  junkShop   JunkShop @relation(fields: [junkShopId], references: [id])
-  type       String
-  quantityKg Float
-  pricePerKg Float
-  available  Boolean  @default(true)
-}
-
-model RoomScan {
-  id              String   @id @default(cuid())
-  buyerId         String
-  buyer           User     @relation(fields: [buyerId], references: [id])
-  imageUrl        String
-  recommendations String[]
-  createdAt       DateTime @default(now())
-}
-
-model CustomRequest {
-  id          String        @id @default(cuid())
-  buyerId     String
-  buyer       User          @relation("BuyerRequests", fields: [buyerId], references: [id])
-  artisanId   String
-  artisan     User          @relation("ArtisanRequests", fields: [artisanId], references: [id])
-  description String
-  budget      Float?
-  status      RequestStatus @default(PENDING)
-  createdAt   DateTime      @default(now())
-}
-
-model Room {
-  id               String                 @id @default(cuid())
-  userId           String
-  imageUrl         String
-  generationStatus Room3DGenerationStatus @default(PENDING)
-  roomTheme        String
-  createdAt        DateTime               @default(now())
-  updatedAt        DateTime               @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
+  quantityKg   Float
+  dateNeeded   DateTime
+  description  String?
+  photoUrl     String?
+  status       RequestStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
 }
