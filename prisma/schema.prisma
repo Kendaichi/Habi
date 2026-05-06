@@ -26,6 +26,12 @@ enum ListingType {
   LEASE
 }
 
+enum ListingStatus {
+  DRAFT
+  AVAILABLE
+  IN_USE
+}
+
 enum OrderStatus {
   PENDING
   CONFIRMED
@@ -41,19 +47,27 @@ enum RequestStatus {
   COMPLETED
 }
 
+enum RefurbStatus {
+  IN_USE
+  AWAITING
+  REFURBISHING
+}
+
 model User {
-  id                      String          @id @default(cuid())
-  email                   String          @unique
+  id                      String              @id @default(cuid())
+  authId                  String?             @unique
+  email                   String              @unique
   name                    String
   role                    Role
-  createdAt               DateTime        @default(now())
+  createdAt               DateTime            @default(now())
   products                Product[]
   orders                  Order[]
   rentals                 Rental[]
   roomScans               RoomScan[]
-  customRequestsAsBuyer   CustomRequest[] @relation("BuyerRequests")
-  customRequestsAsArtisan CustomRequest[] @relation("ArtisanRequests")
+  customRequestsAsBuyer   CustomRequest[]     @relation("BuyerRequests")
+  customRequestsAsArtisan CustomRequest[]     @relation("ArtisanRequests")
   rooms                   Room[]
+  traceabilityChains      TraceabilityChain[]
 }
 
 model Product {
@@ -70,13 +84,14 @@ model Product {
 }
 
 model Listing {
-  id        String      @id @default(cuid())
+  id        String        @id @default(cuid())
   productId String
-  product   Product     @relation(fields: [productId], references: [id])
+  product   Product       @relation(fields: [productId], references: [id])
   type      ListingType
   price     Float
-  available Boolean     @default(true)
-  createdAt DateTime    @default(now())
+  status    ListingStatus @default(DRAFT)
+  views     Int           @default(0)
+  createdAt DateTime      @default(now())
   orders    Order[]
   rentals   Rental[]
 }
@@ -85,6 +100,7 @@ model JunkShop {
   id            String              @id @default(cuid())
   name          String
   city          String
+  address       String?
   materials     String[]
   verifiedAt    DateTime?
   traceChains   TraceabilityChain[]
@@ -99,6 +115,7 @@ model TraceabilityChain {
   junkShopId        String
   junkShop          JunkShop @relation(fields: [junkShopId], references: [id])
   artisanId         String
+  artisan           User     @relation(fields: [artisanId], references: [id])
 }
 
 model Order {
@@ -112,14 +129,15 @@ model Order {
 }
 
 model Rental {
-  id         String    @id @default(cuid())
-  buyerId    String
-  buyer      User      @relation(fields: [buyerId], references: [id])
-  listingId  String
-  listing    Listing   @relation(fields: [listingId], references: [id])
-  startDate  DateTime
-  endDate    DateTime
-  returnedAt DateTime?
+  id           String       @id @default(cuid())
+  buyerId      String
+  buyer        User         @relation(fields: [buyerId], references: [id])
+  listingId    String
+  listing      Listing      @relation(fields: [listingId], references: [id])
+  startDate    DateTime
+  endDate      DateTime
+  returnedAt   DateTime?
+  refurbStatus RefurbStatus @default(IN_USE)
 }
 
 model DemandSignal {
