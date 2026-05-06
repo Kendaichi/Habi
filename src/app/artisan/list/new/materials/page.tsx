@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Search,
   Leaf,
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react'
 import { TopNav } from '@/components/artisan/TopNav'
 import { BottomNav } from '@/components/artisan/BottomNav'
+import { saveDraft } from '../draft'
 import type { LucideIcon } from 'lucide-react'
 
 interface Material {
@@ -70,9 +72,15 @@ const materials: Material[] = [
 const filters = ['All', 'Plant-based', 'Recycled', 'Textiles']
 
 export default function NewListingMaterialsPage() {
+  const router = useRouter()
   const [selected, setSelected] = useState<string[]>([])
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('All')
+
+  function handleContinue() {
+    saveDraft({ materialType: selected.map((id) => materials.find((m) => m.id === id)?.name ?? id).join(', ') })
+    router.push('/artisan/list/new/type')
+  }
 
   const toggle = (id: string) =>
     setSelected((prev) => (prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id]))
@@ -255,13 +263,14 @@ export default function NewListingMaterialsPage() {
                 </div>
               </div>
 
-              <Link
-                href="/artisan/list/new/type"
-                className="bg-forest text-cream mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold shadow-sm transition-all hover:opacity-90"
+              <button
+                onClick={handleContinue}
+                disabled={selected.length === 0}
+                className="bg-forest text-cream mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold shadow-sm transition-all hover:opacity-90 disabled:opacity-40"
               >
                 Confirm & Continue
                 <ArrowRight className="h-4 w-4" />
-              </Link>
+              </button>
               <button className="text-forest mt-3 w-full py-2 text-sm font-medium hover:underline">
                 Save as Draft
               </button>
