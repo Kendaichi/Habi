@@ -1,10 +1,14 @@
 import Link from 'next/link'
 import { ArrowRight, MoveUpRight, Sparkles } from 'lucide-react'
+import { BeforeAfterSlider } from '@/components/buyer/BeforeAfterSlider'
 import { BuyerBottomNav } from '@/components/buyer/BuyerBottomNav'
+import { ImpactSummary } from '@/components/buyer/ImpactSummary'
+import { RoomResultActions } from '@/components/buyer/RoomResultActions'
 import { getLatestCompletedRoomResult } from '@/lib/room-service'
 
 export default async function RoomResultPage() {
   const result = await getLatestCompletedRoomResult()
+  const featured = result?.recommendations[0]
 
   if (!result) {
     return (
@@ -44,11 +48,14 @@ export default async function RoomResultPage() {
           </Link>
         </div>
 
-        <div className="mt-6 overflow-hidden rounded-[34px] border border-white/80 bg-white shadow-[0_28px_64px_rgba(44,44,44,0.1)]">
-          <div
-            className="h-80 bg-cover bg-center"
-            style={{ backgroundImage: `url(${result.generatedImageUrl})` }}
+        <div className="mt-6">
+          <BeforeAfterSlider
+            beforeImageUrl={result.sourceImageUrl}
+            afterImageUrl={result.generatedImageUrl}
           />
+        </div>
+
+        <div className="mt-5 overflow-hidden rounded-lg border border-white/80 bg-white shadow-[0_28px_64px_rgba(44,44,44,0.1)]">
           <div className="space-y-4 p-5">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -103,7 +110,7 @@ export default async function RoomResultPage() {
             ) : null}
             <Link
               href={`/buyer/room/world/${result.roomId}`}
-              className="bg-terracotta text-cream inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold"
+              className="bg-terracotta text-cream inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold"
             >
               Enter generated world
               <ArrowRight className="h-4 w-4" />
@@ -111,12 +118,48 @@ export default async function RoomResultPage() {
           </div>
         </div>
 
+        {featured ? (
+          <div className="mt-6 space-y-4">
+            <ImpactSummary impactKg={12} />
+            <section className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm">
+              <p className="text-forest text-xs font-semibold uppercase tracking-[0.22em]">
+                Best Match
+              </p>
+              <div className="mt-4 grid grid-cols-[112px_1fr] gap-4">
+                <div
+                  className="h-36 rounded-lg bg-cover bg-center"
+                  style={{ backgroundImage: `url(${featured.imageUrl})` }}
+                />
+                <div className="min-w-0">
+                  <h2 className="font-heading text-3xl font-semibold leading-tight text-charcoal">
+                    {featured.productName}
+                  </h2>
+                  <p className="mt-1 text-sm text-stone">by {featured.artisanName}</p>
+                  <p className="mt-3 text-2xl font-bold text-charcoal">
+                    PHP {featured.price.toLocaleString('en-PH')}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-4 text-sm leading-relaxed text-stone">
+                Supports 2 weeks of fair-wage labor and fits the room&apos;s detected light,
+                materials, and free space.
+              </p>
+              <div className="mt-4">
+                <RoomResultActions recommendation={featured} />
+              </div>
+            </section>
+          </div>
+        ) : null}
+
         <div className="mt-8 space-y-4">
+          <h2 className="font-heading text-3xl font-semibold text-charcoal">
+            Other products that fit this room
+          </h2>
           {result.recommendations.map((recommendation) => (
             <Link
               key={recommendation.listingId}
               href={`/buyer/room/visualizer/${recommendation.listingId}`}
-              className="block overflow-hidden rounded-[32px] border border-stone-200 bg-white shadow-[0_18px_48px_rgba(44,44,44,0.08)]"
+              className="block overflow-hidden rounded-lg border border-stone-200 bg-white shadow-[0_18px_48px_rgba(44,44,44,0.08)]"
             >
               <div className="grid grid-cols-[112px_1fr] gap-4 p-4">
                 <div

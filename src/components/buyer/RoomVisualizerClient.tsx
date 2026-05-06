@@ -2,8 +2,9 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, LocateFixed, Share2, Sparkles, ZoomIn } from 'lucide-react'
+import { ArrowLeft, LocateFixed, Share2, ShoppingBag, Sparkles, ZoomIn } from 'lucide-react'
 import { BuyRentLeaseToggle, type ToggleValue } from '@/components/shared/BuyRentLeaseToggle'
+import { addItem, type BuyerCartMode } from '@/lib/buyer-cart'
 import type { RoomVisualizerPayload } from '@/types/room'
 
 interface RoomVisualizerClientProps {
@@ -12,16 +13,46 @@ interface RoomVisualizerClientProps {
 
 export function RoomVisualizerClient({ payload }: RoomVisualizerClientProps) {
   const [mode, setMode] = useState<ToggleValue>(payload.primaryMode.toLowerCase() as ToggleValue)
+  const [added, setAdded] = useState(false)
+
+  const cartMode = mode.toUpperCase() as BuyerCartMode
+
+  function handleAdd() {
+    addItem({
+      listingId: payload.listingId,
+      productId: payload.productId,
+      name: payload.productName,
+      imageUrl: payload.generatedImageUrl,
+      artisanName: payload.artisanName,
+      mode: cartMode,
+      price: payload.price,
+      quantity: 1,
+      impactKg: 12,
+    })
+    setAdded(true)
+    window.setTimeout(() => setAdded(false), 1600)
+  }
 
   return (
-    <div className="min-h-screen bg-[#efe3d4] pb-8">
+    <div className="min-h-screen bg-[#efe3d4] pb-8 lg:overflow-hidden">
       <div
-        className="relative min-h-screen bg-cover bg-center"
+        className="relative min-h-screen bg-cover bg-center lg:bg-fixed"
         style={{ backgroundImage: `url(${payload.generatedImageUrl})` }}
       >
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(250,246,240,0.92)_0%,rgba(250,246,240,0.18)_26%,rgba(250,246,240,0.82)_100%)]" />
 
-        <div className="relative mx-auto flex min-h-screen max-w-md flex-col px-5 pt-5">
+        <button
+          type="button"
+          className="absolute top-[34%] left-[23%] z-10 h-6 w-6 animate-pulse rounded-full border-2 border-white bg-terracotta shadow-[0_0_0_10px_rgba(200,85,61,0.18)]"
+          aria-label="Hotspot: material source"
+        />
+        <button
+          type="button"
+          className="absolute top-[52%] right-[28%] z-10 h-6 w-6 animate-pulse rounded-full border-2 border-white bg-forest shadow-[0_0_0_10px_rgba(27,94,63,0.18)]"
+          aria-label="Hotspot: product specs"
+        />
+
+        <div className="relative mx-auto flex min-h-screen max-w-md flex-col px-5 pt-5 lg:max-w-6xl lg:grid-cols-[1fr_420px] lg:gap-6 lg:pb-6">
           <div className="flex items-center justify-between">
             <Link href="/buyer/room/result" className="text-forest inline-flex items-center gap-2">
               <ArrowLeft className="h-6 w-6" />
@@ -35,7 +66,7 @@ export function RoomVisualizerClient({ payload }: RoomVisualizerClientProps) {
             </Link>
           </div>
 
-          <div className="mt-18 flex-1 rounded-[38px] border border-white/70 bg-white/82 p-6 shadow-[0_28px_70px_rgba(44,44,44,0.14)] backdrop-blur-md">
+          <div className="mt-18 flex-1 rounded-lg border border-white/70 bg-white/82 p-6 shadow-[0_28px_70px_rgba(44,44,44,0.14)] backdrop-blur-md lg:ml-auto lg:w-[420px]">
             <div className="flex items-center gap-3 text-sm font-semibold">
               <span className="text-stone">Lighting</span>
               <span className="text-stone/50">•</span>
@@ -82,7 +113,7 @@ export function RoomVisualizerClient({ payload }: RoomVisualizerClientProps) {
               </div>
 
               {payload.traceability ? (
-                <div className="rounded-[28px] border border-forest/12 bg-forest/6 p-4">
+                <div className="rounded-lg border border-forest/12 bg-forest/6 p-4">
                   <p className="text-forest text-sm font-semibold">Threaded Story</p>
                   <p className="text-charcoal mt-1 text-xl">See Traceability Map</p>
                   <p className="text-stone mt-2 text-sm">
@@ -92,7 +123,7 @@ export function RoomVisualizerClient({ payload }: RoomVisualizerClientProps) {
               ) : null}
             </div>
 
-            <div className="mt-7 rounded-[28px] bg-white/80 p-5">
+            <div className="mt-7 rounded-lg bg-white/80 p-5">
               <div className="flex flex-wrap gap-2">
                 {payload.reasonTags.map((tag) => (
                   <span
@@ -108,10 +139,14 @@ export function RoomVisualizerClient({ payload }: RoomVisualizerClientProps) {
             </div>
           </div>
 
-          <div className="mt-6 rounded-[34px] border border-white/80 bg-white/88 p-5 shadow-[0_20px_50px_rgba(44,44,44,0.12)] backdrop-blur-md">
-            <button className="bg-terracotta text-cream flex w-full items-center justify-center gap-3 rounded-3xl px-5 py-5 text-2xl font-semibold">
-              <Sparkles className="h-6 w-6" />
-              Add to My Space
+          <div className="mt-6 rounded-lg border border-white/80 bg-white/88 p-5 shadow-[0_20px_50px_rgba(44,44,44,0.12)] backdrop-blur-md lg:ml-auto lg:w-[420px]">
+            <button
+              type="button"
+              onClick={handleAdd}
+              className="bg-terracotta text-cream flex w-full items-center justify-center gap-3 rounded-lg px-5 py-5 text-xl font-semibold"
+            >
+              {added ? <Sparkles className="h-6 w-6" /> : <ShoppingBag className="h-6 w-6" />}
+              {added ? 'Added to Cart' : 'Add to Cart'}
             </button>
           </div>
         </div>

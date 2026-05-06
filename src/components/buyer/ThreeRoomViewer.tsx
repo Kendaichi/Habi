@@ -21,6 +21,8 @@ function SceneBackground() {
     ctx.fillRect(0, 0, 2, 256)
     const tex = new THREE.CanvasTexture(canvas)
     tex.mapping = THREE.EquirectangularReflectionMapping
+    // React Three Fiber exposes the scene object specifically so renderer state can be configured.
+    // eslint-disable-next-line react-hooks/immutability
     scene.background = tex
     return () => {
       tex.dispose()
