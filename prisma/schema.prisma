@@ -156,20 +156,9 @@ model Room {
   providerError      String?
   providerPayload    Json?
   user               User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  RoomScan           RoomScan?
+  scan               RoomScan?
 
   @@index([userId])
-}
-
-model MaterialRequest {
-  id           String        @id @default(cuid())
-  materialType String
-  quantityKg   Float
-  dateNeeded   DateTime
-  description  String?
-  photoUrl     String?
-  status       RequestStatus @default(PENDING)
-  createdAt    DateTime      @default(now())
 }
 
 enum Role {
