@@ -1,6 +1,5 @@
 import {
   TrendingUp,
-  Users,
   Package,
   MapPin,
   Share2,
@@ -11,22 +10,11 @@ import {
   CheckCircle,
   Home,
   Store,
+  Users,
 } from 'lucide-react'
 import { TopNav } from '@/components/artisan/TopNav'
 import { BottomNav } from '@/components/artisan/BottomNav'
-
-const topItems = [
-  { rank: 1, name: 'Plastic Brick Panels', searches: '1.8k searches', growth: '+42%' },
-  { rank: 2, name: 'Woven Abaca Rugs', searches: '1.5k searches', growth: '+28%' },
-  { rank: 3, name: 'Rattan Baskets', searches: '1.2k searches', growth: '+15%' },
-  { rank: 4, name: 'Bamboo Planters', searches: '980 searches', growth: '+12%' },
-  { rank: 5, name: 'Coco Coir Mats', searches: '850 searches', growth: '+10%' },
-  { rank: 6, name: 'Clay Pottery', searches: '720 searches', growth: '+8%' },
-  { rank: 7, name: 'Pandán Totes', searches: '650 searches', growth: '+5%' },
-  { rank: 8, name: 'Recycled Glassware', searches: '540 searches', growth: '+4%' },
-  { rank: 9, name: 'Seashell Decor', searches: '490 searches', growth: '+3%' },
-  { rank: 10, name: 'Upcycled Wood Trays', searches: '410 searches', growth: '+2%' },
-]
+import { prisma } from '@/lib/prisma'
 
 const processSteps = [
   {
@@ -46,7 +34,21 @@ const processSteps = [
   },
 ]
 
-export default function ArtisanDemandPage() {
+export default async function ArtisanDemandPage() {
+  const signals = await prisma.demandSignal.findMany({
+    orderBy: { count: 'desc' },
+    take: 10,
+  })
+
+  const topSignal = signals[0]
+  const volume = (topSignal?.count ?? 0) >= 1000 ? 'High' : (topSignal?.count ?? 0) >= 200 ? 'Medium' : 'Low'
+
+  const topItems = signals.map((s, i) => ({
+    rank: i + 1,
+    name: s.keyword,
+    searches: s.count >= 1000 ? `${(s.count / 1000).toFixed(1)}k searches` : `${s.count} searches`,
+  }))
+
   return (
     <div className="bg-cream min-h-screen">
       <TopNav />
@@ -63,11 +65,11 @@ export default function ArtisanDemandPage() {
             <h1 className="font-heading text-cream mb-2 text-3xl font-bold leading-tight">
               High Demand:
               <br />
-              Plastic Brick Panels
+              {topSignal?.keyword ?? 'No signals yet'}
             </h1>
             <p className="text-cream/70 mb-5 text-sm leading-relaxed">
-              Market analysis shows 30+ searches this month specifically from eco-resort developers
-              in Siargao and Davao.
+              Market analysis shows {topSignal?.count ?? 0}+ searches this month specifically from
+              eco-resort developers in {topSignal?.city ?? 'your area'}.
             </p>
             <div className="flex gap-3">
               <div className="border-cream/10 flex-1 rounded-xl border bg-white/10 px-4 py-3 backdrop-blur-md">
@@ -80,7 +82,7 @@ export default function ArtisanDemandPage() {
                 <span className="text-cream/60 mb-1 block text-[10px] font-bold uppercase tracking-widest">
                   Volume
                 </span>
-                <span className="font-heading text-cream text-xl font-bold">High</span>
+                <span className="font-heading text-cream text-xl font-bold">{volume}</span>
               </div>
             </div>
           </div>
@@ -251,10 +253,7 @@ export default function ArtisanDemandPage() {
                   <span className="font-heading text-charcoal/20 text-xl font-bold">
                     #{item.rank}
                   </span>
-                  <span className="text-forest flex items-center gap-0.5 text-xs font-bold">
-                    <TrendingUp className="h-3 w-3" />
-                    {item.growth}
-                  </span>
+                  <TrendingUp className="text-forest h-3.5 w-3.5" />
                 </div>
                 <h4 className="text-charcoal mb-0.5 text-sm font-semibold leading-snug">
                   {item.name}
