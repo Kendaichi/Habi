@@ -158,9 +158,21 @@ model Room {
   providerError      String?
   providerPayload    Json?
   user               User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  RoomScan           RoomScan?
+  scan               RoomScan?
 
   @@index([userId])
+}
+
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model MaterialRequest {
+  id           String        @id
+  materialType String
+  quantityKg   Float
+  dateNeeded   DateTime
+  description  String?
+  photoUrl     String?
+  status       RequestStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
 }
 
 enum Role {
@@ -207,15 +219,4 @@ enum RefurbStatus {
   IN_USE
   AWAITING
   REFURBISHING
-}
-
-model MaterialRequest {
-  id           String        @id @default(cuid())
-  materialType String
-  quantityKg   Float
-  dateNeeded   DateTime
-  description  String?
-  photoUrl     String?
-  status       RequestStatus @default(PENDING)
-  createdAt    DateTime      @default(now())
 }
