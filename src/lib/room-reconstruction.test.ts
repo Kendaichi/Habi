@@ -60,6 +60,7 @@ function recommendation(
     primaryMode,
     availableModes: [primaryMode],
     imageUrl: 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22/%3E',
+    imageUrls: [],
     score: 100,
     reasonTags: ['fit'],
     summary: 'Room fit',

@@ -12,10 +12,11 @@ export type SubmitThreeDAIRoomRequest = {
   presetId: string
   notes?: string
   recommendations?: Array<{
+    productId?: string
     productName: string
     materialType: string
-    primaryImageUrl: string | null
-    imageUrls: string[]
+    primaryImageUrl?: string | null
+    imageUrls?: string[]
     reasonTags: string[]
   }>
 }
@@ -127,7 +128,7 @@ function trimSegment(value: string, maxLength: number): string {
 }
 
 export function buildThreeDAIRoomPrompt(input: SubmitThreeDAIRoomRequest): string {
-  const productSummary = input.recommendations
+  const productSummary = (input.recommendations ?? [])
     .slice(0, 4)
     .map((recommendation) => {
       const tags = recommendation.reasonTags
@@ -156,12 +157,12 @@ export function buildThreeDAIRequestMetadata(input: SubmitThreeDAIRoomRequest) {
     roomTheme: input.roomTheme,
     prompt,
     originalNotes: input.notes ?? '',
-    productContext: input.recommendations.slice(0, 4).map((recommendation) => ({
+    productContext: (input.recommendations ?? []).slice(0, 4).map((recommendation) => ({
       productId: recommendation.productId,
       productName: recommendation.productName,
       materialType: recommendation.materialType,
       primaryImageUrl: recommendation.primaryImageUrl,
-      imageUrls: recommendation.imageUrls.slice(0, 1),
+      imageUrls: (recommendation.imageUrls ?? []).slice(0, 1),
       reasonTags: recommendation.reasonTags,
     })),
   }

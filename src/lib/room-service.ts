@@ -305,7 +305,7 @@ function mergeProviderPayload(
 export function buildProviderRecommendationContext(
   recommendations: RoomRecommendation[],
   limit = 4,
-): SubmitThreeDAIRoomRequest['recommendations'] {
+): NonNullable<SubmitThreeDAIRoomRequest['recommendations']> {
   return recommendations.slice(0, limit).map((recommendation) => {
     const normalizedImageUrls = normalizeProductImageUrls(recommendation.imageUrls)
     const primaryImageUrl = selectPrimaryProductImageUrl(normalizedImageUrls)
@@ -984,13 +984,15 @@ export async function createRoomGeneration(
   })
   const recommendations = await getRankedRecommendations(preset.id, analysis)
   const providerRecommendations = buildProviderRecommendationContext(recommendations)
+  const useThreeDAIPrimary = hasThreeDAIService()
+  const useThreeDAICandidate = hasThreeDAIService()
 
   let composed = null as Awaited<ReturnType<typeof buildComposedScene>> | null
-  let generationProvider = useThreeDAIPrimary ? getThreeDAIProviderName() : COMPOSED_PROVIDER
+  const generationProvider = useThreeDAIPrimary ? getThreeDAIProviderName() : COMPOSED_PROVIDER
   let providerStatus: string = useThreeDAIPrimary ? 'PENDING' : 'COMPLETED'
   let providerError: string | null = null
-  const worldAssetUrl: string | null = null
-  const worldAssetFormat: WorldAssetFormat | null = null
+  let worldAssetUrl: string | null = null
+  let worldAssetFormat: WorldAssetFormat | null = null
   let previewImageUrl: string | null = buildRoomArtwork(
     preset.roomTheme,
     preset.wall,
@@ -1095,19 +1097,17 @@ export async function createRoomGeneration(
 
     if (createdRoom.generationStatus === Room3DGenerationStatus.PROCESSING && useThreeDAICandidate) {
       try {
-        const submitted = await submitThreeDAIRoomJob({
+        const jobInput = {
           roomId,
           imageUrl: sourceImageUrl,
           sourceViews: sourceViews.slice(1),
           roomTheme,
           presetId: preset.id,
           notes: input.notes,
-          recommendations: recommendations.map((recommendation) => ({
-            productName: recommendation.productName,
-            materialType: recommendation.materialType,
-            reasonTags: recommendation.reasonTags,
-          })),
-        })
+          recommendations: providerRecommendations,
+        }
+        const submitted = await submitThreeDAIRoomJob(jobInput)
+        const requestMetadata = buildThreeDAIRequestMetadata(jobInput)
 
         await prisma.room.update({
           where: { id: createdRoom.id },
