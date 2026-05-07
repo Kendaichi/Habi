@@ -7,7 +7,6 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
 import { useRole, type UserRole } from '@/context/RoleContext'
 import { getRoleHomeRoute, isUserRole, roleLabels } from '@/lib/role-routes'
 import { createSupabaseBrowserClient } from '@/lib/supabase/client'
@@ -81,12 +80,13 @@ export function OnboardingAuthForm({ mode, initialRole }: OnboardingAuthFormProp
 
     try {
       if (!hasSupabaseBrowserEnv()) {
-        setRole(selectedRole)
-        router.replace(getRoleHomeRoute(selectedRole))
+        if (selectedRole) setRole(selectedRole)
+        router.replace(getRoleHomeRoute(selectedRole ?? 'buyer'))
         return
       }
 
       const supabase = createSupabaseBrowserClient()
+
       const result = isSignup
         ? await supabase.auth.signUp({
             email,
@@ -102,10 +102,10 @@ export function OnboardingAuthForm({ mode, initialRole }: OnboardingAuthFormProp
 
       if (result.error) throw result.error
 
-      if (!result.data.session && isSignup) {
-        setRole(selectedRole)
-        setMessage('Check your email to confirm your Habi account, then sign in.')
-        return
+      if (!result.data.session) {
+        throw new Error(
+          'Email confirmation is still enabled in Supabase. Turn it off in Authentication settings to use email/password without confirmation.',
+        )
       }
 
       await completeProfile({ role: selectedRole, name })
@@ -206,18 +206,14 @@ export function OnboardingAuthForm({ mode, initialRole }: OnboardingAuthFormProp
                 Password
               </Label>
               {!isSignup ? (
-                <Link
-                  href="/onboarding/forgot-password"
-                  className="text-terracotta text-xs hover:underline"
-                >
-                  Forgot?
-                </Link>
+                <span className="text-stone text-xs">Email/password only</span>
               ) : null}
             </div>
             <Input
               name="password"
               type="password"
               required
+              minLength={6}
               placeholder="password"
               className="bg-cream border-border"
             />
@@ -240,60 +236,6 @@ export function OnboardingAuthForm({ mode, initialRole }: OnboardingAuthFormProp
           >
             {isSignup ? 'Create Account' : 'Sign In'} -{' '}
             {selectedRole ? roleLabels[selectedRole] : 'Choose Role'}
-          </Button>
-
-          <div className="flex items-center gap-3 py-1">
-            <Separator className="flex-1" />
-            <span className="text-stone text-xs tracking-widest uppercase">or continue with</span>
-            <Separator className="flex-1" />
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            disabled={isPending}
-            onClick={async () => {
-              setError(null)
-              setMessage(null)
-              if (!selectedRole) {
-                router.push('/onboarding/role-select')
-                return
-              }
-              const emailInput = document.querySelector<HTMLInputElement>('input[name="email"]')
-              const email = emailInput?.value.trim()
-              if (!email) {
-                setError('Enter your email before requesting a magic link.')
-                return
-              }
-
-              setIsPending(true)
-              try {
-                if (!hasSupabaseBrowserEnv()) {
-                  setRole(selectedRole)
-                  router.replace(getRoleHomeRoute(selectedRole))
-                  return
-                }
-
-                const supabase = createSupabaseBrowserClient()
-                const { error: otpError } = await supabase.auth.signInWithOtp({
-                  email,
-                  options: {
-                    data: { role: selectedRole },
-                  },
-                })
-                if (otpError) throw otpError
-                setRole(selectedRole)
-                setMessage('Magic link sent. Open it on this device to continue.')
-              } catch (caught) {
-                setError(caught instanceof Error ? caught.message : 'Unable to send magic link.')
-              } finally {
-                setIsPending(false)
-              }
-            }}
-            className="border-border text-charcoal w-full gap-2 font-semibold"
-          >
-            <Image src="/Habi_Logo.png" alt="" width={16} height={16} className="rounded-sm" />
-            Magic Link
           </Button>
         </div>
       </form>

@@ -14,7 +14,12 @@ export function getSupabaseBrowserEnv() {
 }
 
 export function hasSupabaseBrowserEnv() {
-  if (process.env.NEXT_PUBLIC_AUTH_MODE !== 'supabase') return false
+  if (
+    process.env.NEXT_PUBLIC_AUTH_MODE === 'prototype' ||
+    process.env.NEXT_PUBLIC_AUTH_MODE === 'disabled'
+  ) {
+    return false
+  }
 
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
