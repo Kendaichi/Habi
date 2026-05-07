@@ -208,13 +208,15 @@ export function EditListingClient({
     const uploadedUrls: string[] = []
 
     try {
-      for (const file of newFiles) {
-        const ext = file.name.split('.').pop() ?? 'jpg'
-        const path = `pending/${crypto.randomUUID()}.${ext}`
-        const { error } = await supabase.storage.from(BUCKET).upload(path, file)
-        if (!error) {
-          const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
-          uploadedUrls.push(data.publicUrl)
+      if (supabase) {
+        for (const file of newFiles) {
+          const ext = file.name.split('.').pop() ?? 'jpg'
+          const path = `pending/${crypto.randomUUID()}.${ext}`
+          const { error } = await supabase.storage.from(BUCKET).upload(path, file)
+          if (!error) {
+            const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
+            uploadedUrls.push(data.publicUrl)
+          }
         }
       }
     } catch (err) {

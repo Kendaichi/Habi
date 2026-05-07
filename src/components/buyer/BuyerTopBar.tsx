@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { ShoppingBag } from 'lucide-react'
+import { BuyerCartBadge } from '@/components/buyer/BuyerCartBadge'
 
 type BuyerTopBarProps = {
   title?: string
@@ -29,13 +29,7 @@ export function BuyerTopBar({ title = 'Habi', eyebrow }: BuyerTopBarProps) {
             <p className="font-heading truncate text-2xl font-semibold text-charcoal">{title}</p>
           </div>
         </Link>
-        <Link
-          href="/buyer/cart"
-          aria-label="Shopping cart"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-stone-200 bg-white text-forest shadow-sm"
-        >
-          <ShoppingBag className="h-5 w-5" />
-        </Link>
+        <BuyerCartBadge />
       </div>
     </header>
   )

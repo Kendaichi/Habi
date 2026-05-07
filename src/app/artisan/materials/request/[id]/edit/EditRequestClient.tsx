@@ -52,7 +52,7 @@ export function EditRequestClient({ request }: { request: RequestData }) {
 
     let photoUrl = request.photoUrl ?? undefined
 
-    if (file) {
+    if (file && supabase) {
       const ext = file.name.split('.').pop() ?? 'jpg'
       const path = `${crypto.randomUUID()}.${ext}`
       const { error } = await supabase.storage.from(BUCKET).upload(path, file)

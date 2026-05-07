@@ -1,8 +1,9 @@
 'use client'
 
+import NextImage from 'next/image'
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Camera, Image, Sun, ZoomIn, Layers, Info, ArrowRight, Loader2 } from 'lucide-react'
+import { Camera, Image as ImageIcon, Sun, ZoomIn, Layers, Info, ArrowRight, Loader2 } from 'lucide-react'
 import { TopNav } from '@/components/artisan/TopNav'
 import { BottomNav } from '@/components/artisan/BottomNav'
 import { supabase } from '@/lib/supabase'
@@ -54,6 +55,12 @@ export default function NewListingStep1Page() {
     const urls: string[] = []
 
     try {
+      if (!supabase) {
+        saveDraft({ images: [] })
+        router.push('/artisan/list/new/materials')
+        return
+      }
+
       for (const file of files) {
         const ext = file.name.split('.').pop() ?? 'jpg'
         const path = `pending/${crypto.randomUUID()}.${ext}`
@@ -142,16 +149,19 @@ export default function NewListingStep1Page() {
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className="border-border bg-muted flex aspect-square items-center justify-center overflow-hidden rounded-xl border"
+                  className="border-border bg-muted relative flex aspect-square items-center justify-center overflow-hidden rounded-xl border"
                 >
                   {previews[i] ? (
-                    <img
+                    <NextImage
                       src={previews[i]}
                       alt={`Photo ${i + 1}`}
+                      fill
+                      unoptimized
+                      sizes="96px"
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <Image className="text-stone/40 h-5 w-5" />
+                    <ImageIcon className="text-stone/40 h-5 w-5" />
                   )}
                 </div>
               ))}
