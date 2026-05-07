@@ -14,6 +14,8 @@ export type SubmitThreeDAIRoomRequest = {
   recommendations?: Array<{
     productName: string
     materialType: string
+    primaryImageUrl: string | null
+    imageUrls: string[]
     reasonTags: string[]
   }>
 }
@@ -118,6 +120,53 @@ function buildNegativePrompt(input: SubmitThreeDAIRoomRequest): string {
   return avoided.join(', ')
 }
 
+function trimSegment(value: string, maxLength: number): string {
+  const normalized = value.replace(/\s+/g, ' ').trim()
+  if (normalized.length <= maxLength) return normalized
+  return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`
+}
+
+export function buildThreeDAIRoomPrompt(input: SubmitThreeDAIRoomRequest): string {
+  const productSummary = input.recommendations
+    .slice(0, 4)
+    .map((recommendation) => {
+      const tags = recommendation.reasonTags
+        .slice(0, 2)
+        .map((tag) => trimSegment(tag, 32))
+        .join(', ')
+      const detail = tags ? ` (${tags})` : ''
+      return `${trimSegment(recommendation.productName, 48)} in ${trimSegment(recommendation.materialType, 24)}${detail}`
+    })
+    .join('; ')
+
+  const segments = [
+    `Generate a furnished 3D room that preserves the uploaded space and supports a ${trimSegment(input.roomTheme, 48)} mood.`,
+    productSummary ? `Reference artisan products: ${productSummary}.` : '',
+    input.notes ? `Room notes: ${trimSegment(input.notes, 220)}.` : '',
+  ].filter(Boolean)
+
+  return trimSegment(segments.join(' '), 900)
+}
+
+export function buildThreeDAIRequestMetadata(input: SubmitThreeDAIRoomRequest) {
+  const prompt = buildThreeDAIRoomPrompt(input)
+  return {
+    roomId: input.roomId,
+    presetId: input.presetId,
+    roomTheme: input.roomTheme,
+    prompt,
+    originalNotes: input.notes ?? '',
+    productContext: input.recommendations.slice(0, 4).map((recommendation) => ({
+      productId: recommendation.productId,
+      productName: recommendation.productName,
+      materialType: recommendation.materialType,
+      primaryImageUrl: recommendation.primaryImageUrl,
+      imageUrls: recommendation.imageUrls.slice(0, 1),
+      reasonTags: recommendation.reasonTags,
+    })),
+  }
+}
+
 function dataUriToFile(imageUrl: string, filename: string): File {
   const [header, base64] = imageUrl.split(',')
   const mimeType = header.match(/:(.*?);/)?.[1] ?? 'image/jpeg'
@@ -138,6 +187,7 @@ function buildTripoFormData(input: SubmitThreeDAIRoomRequest): FormData {
   fd.append('geometry_quality', 'standard')
   fd.append('texture_alignment', 'original_image')
   fd.append('enable_image_autofix', 'true')
+  fd.append('prompt', buildThreeDAIRoomPrompt(input))
   fd.append('negative_prompt', buildNegativePrompt(input))
   return fd
 }

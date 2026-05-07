@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useRef, useTransition } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   ArrowLeft,
   Save,
   Camera,
-  Image,
+  Image as ImageIcon,
   Loader2,
   Leaf,
   Trees,
@@ -313,8 +314,15 @@ export function EditListingClient({
               >
                 {allPreviews[i] ? (
                   <>
-                    <img src={allPreviews[i]} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
+                    <Image
+                      src={allPreviews[i]}
+                      alt={`Photo ${i + 1}`}
+                      fill
+                      sizes="96px"
+                      className="object-cover"
+                    />
                     <button
+                      type="button"
                       onClick={() => removeImage(i)}
                       className="bg-charcoal/70 hover:bg-charcoal absolute top-1 right-1 flex h-5 w-5 items-center justify-center rounded-full text-white"
                     >
@@ -322,7 +330,7 @@ export function EditListingClient({
                     </button>
                   </>
                 ) : (
-                  <Image className="text-stone/40 h-5 w-5" />
+                  <ImageIcon className="text-stone/40 h-5 w-5" />
                 )}
               </div>
             ))}

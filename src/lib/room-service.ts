@@ -4,12 +4,14 @@ import { composeRoomWorld } from '@/lib/room-world-composer'
 import { analyzeRoomImage } from '@/lib/room-vision-client'
 import { getRoomStructuralAnalysis } from '@/lib/room-vision-provider'
 import {
+  buildThreeDAIRequestMetadata,
   getThreeDAIJobResult,
   getThreeDAIJobStatus,
   getThreeDAIProviderName,
   hasThreeDAIService,
   submitThreeDAIRoomJob,
   type ThreeDAIJobStatusResponse,
+  type SubmitThreeDAIRoomRequest,
 } from '@/lib/threedai-client'
 import { products as mockProducts, traceabilityChains as mockTraceabilityChains } from '@/data/mockData'
 import { prisma } from '@/lib/prisma'
@@ -94,6 +96,8 @@ type MockRoomRecord = {
   scene: RoomSceneData
   generationProvider: string
 }
+
+type ProviderPayloadState = Record<string, unknown>
 
 function modeFromListingType(type: ListingType): AcquisitionMode {
   if (type === ListingType.RENT) return 'RENT'
@@ -262,6 +266,60 @@ function createReasonTags(listing: ListingRecord, presetId: string, analysis: Ro
   return tags.slice(0, 3)
 }
 
+function isPublicImageUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value)
+}
+
+export function normalizeProductImageUrls(imageUrls: string[]): string[] {
+  const seen = new Set<string>()
+  return imageUrls
+    .map((url) => url.trim())
+    .filter((url) => {
+      if (!url || !isPublicImageUrl(url) || seen.has(url)) return false
+      seen.add(url)
+      return true
+    })
+}
+
+export function selectPrimaryProductImageUrl(imageUrls: string[]): string | null {
+  const normalized = normalizeProductImageUrls(imageUrls)
+  return normalized.find((url) => /\/product-images\/.*\/seed\//i.test(url) || /\/product-images\/seed\//i.test(url))
+    ?? normalized[0]
+    ?? null
+}
+
+function mergeProviderPayload(
+  existingPayload: Prisma.JsonValue | null | undefined,
+  updates: ProviderPayloadState,
+): Prisma.InputJsonValue {
+  const base =
+    existingPayload && typeof existingPayload === 'object' && !Array.isArray(existingPayload)
+      ? (existingPayload as ProviderPayloadState)
+      : {}
+  return ({
+    ...base,
+    ...updates,
+  } as Prisma.InputJsonObject)
+}
+
+export function buildProviderRecommendationContext(
+  recommendations: RoomRecommendation[],
+  limit = 4,
+): SubmitThreeDAIRoomRequest['recommendations'] {
+  return recommendations.slice(0, limit).map((recommendation) => {
+    const normalizedImageUrls = normalizeProductImageUrls(recommendation.imageUrls)
+    const primaryImageUrl = selectPrimaryProductImageUrl(normalizedImageUrls)
+    return {
+      productId: recommendation.productId,
+      productName: recommendation.productName,
+      materialType: recommendation.materialType,
+      primaryImageUrl,
+      imageUrls: primaryImageUrl ? [primaryImageUrl] : [],
+      reasonTags: recommendation.reasonTags,
+    }
+  })
+}
+
 function getFallbackRecommendations(presetId: string): RoomRecommendation[] {
   const preset = getRoomPreset(presetId)
 
@@ -282,6 +340,7 @@ function getFallbackRecommendations(presetId: string): RoomRecommendation[] {
       availableModes: primaryMode === 'BUY' ? ['BUY', 'RENT'] : [primaryMode, 'BUY'],
       imageUrl:
         product.images[0] || makeProductArtwork(product.name, product.materialType, preset.accent),
+      imageUrls: product.images.filter(Boolean),
       score: 100 - index * 7,
       reasonTags,
       summary: `${product.name} complements a ${preset.roomTheme.toLowerCase()} room even while the live database is offline.`,
@@ -351,6 +410,7 @@ async function getRankedRecommendations(
         imageUrl:
           primary.product.images[0] ||
           makeProductArtwork(primary.product.name, primary.product.materialType, getRoomPreset(presetId).accent),
+        imageUrls: primary.product.images.filter(Boolean),
         score,
         reasonTags,
         summary: `${primary.product.name} complements a ${getRoomPreset(presetId).roomTheme.toLowerCase()} room with ${primary.product.materialType.toLowerCase()} texture and artisan detail.`,
@@ -589,7 +649,12 @@ async function persistThreeDAIRoomStatus(
     data: {
       providerStatus: status.status,
       providerError: status.errorMessage ?? null,
-      providerPayload: status.raw ? toInputJsonValue(status.raw) : Prisma.JsonNull,
+      providerPayload: mergeProviderPayload(room.providerPayload, {
+        progress: status.progress ?? null,
+        providerStatus: status.status,
+        providerError: status.errorMessage ?? null,
+        statusResponse: status.raw ?? null,
+      }),
     },
     include: { scan: true },
   })
@@ -670,7 +735,12 @@ async function reconcileThreeDAIRoom(room: RoomRecord): Promise<RoomRecord> {
               : undefined,
           providerStatus: status.status,
           providerError: status.errorMessage ?? '3D AI Studio generation failed.',
-          providerPayload: status.raw ? toInputJsonValue(status.raw) : Prisma.JsonNull,
+          providerPayload: mergeProviderPayload(room.providerPayload, {
+            progress: status.progress ?? null,
+            providerStatus: status.status,
+            providerError: status.errorMessage ?? '3D AI Studio generation failed.',
+            statusResponse: status.raw ?? null,
+          }),
         },
         include: { scan: true },
       })
@@ -748,7 +818,12 @@ async function reconcileThreeDAIRoom(room: RoomRecord): Promise<RoomRecord> {
             : undefined,
         providerStatus: 'COMPLETED',
         providerError: null,
-        providerPayload: result.raw ? toInputJsonValue(result.raw) : Prisma.JsonNull,
+        providerPayload: mergeProviderPayload(room.providerPayload, {
+          progress: 100,
+          providerStatus: 'COMPLETED',
+          providerError: null,
+          resultResponse: result.raw ?? null,
+        }),
         worldAssetUrl: result.worldAssetUrl,
         worldAssetFormat: result.worldAssetFormat,
         previewImageUrl,
@@ -908,14 +983,14 @@ export async function createRoomGeneration(
     analysis,
   })
   const recommendations = await getRankedRecommendations(preset.id, analysis)
+  const providerRecommendations = buildProviderRecommendationContext(recommendations)
 
   let composed = null as Awaited<ReturnType<typeof buildComposedScene>> | null
-  const useThreeDAICandidate = hasThreeDAIService()
-  const generationProvider = useThreeDAICandidate ? getThreeDAIProviderName() : COMPOSED_PROVIDER
-  let providerStatus: string = useThreeDAICandidate ? 'PENDING' : 'COMPLETED'
+  let generationProvider = useThreeDAIPrimary ? getThreeDAIProviderName() : COMPOSED_PROVIDER
+  let providerStatus: string = useThreeDAIPrimary ? 'PENDING' : 'COMPLETED'
   let providerError: string | null = null
-  let worldAssetUrl: string | null = null
-  let worldAssetFormat: WorldAssetFormat | null = null
+  const worldAssetUrl: string | null = null
+  const worldAssetFormat: WorldAssetFormat | null = null
   let previewImageUrl: string | null = buildRoomArtwork(
     preset.roomTheme,
     preset.wall,
@@ -923,7 +998,7 @@ export async function createRoomGeneration(
     preset.accent,
     [],
   )
-  let generationStatus: Room3DGenerationStatus = useThreeDAICandidate
+  let generationStatus: Room3DGenerationStatus = useThreeDAIPrimary
     ? Room3DGenerationStatus.PROCESSING
     : Room3DGenerationStatus.COMPLETED
   let scene: RoomSceneData = {
@@ -1027,6 +1102,11 @@ export async function createRoomGeneration(
           roomTheme,
           presetId: preset.id,
           notes: input.notes,
+          recommendations: recommendations.map((recommendation) => ({
+            productName: recommendation.productName,
+            materialType: recommendation.materialType,
+            reasonTags: recommendation.reasonTags,
+          })),
         })
 
         await prisma.room.update({
@@ -1035,7 +1115,13 @@ export async function createRoomGeneration(
             generationProvider: submitted.providerName,
             externalJobId: submitted.externalJobId,
             providerStatus: submitted.status,
-            providerPayload: submitted.raw ? toInputJsonValue(submitted.raw) : Prisma.JsonNull,
+            providerPayload: mergeProviderPayload(createdRoom.providerPayload, {
+              progress: null,
+              providerStatus: submitted.status,
+              providerError,
+              requestMetadata,
+              submitResponse: submitted.raw ?? null,
+            }),
             providerError,
           },
         })

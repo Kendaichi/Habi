@@ -2,6 +2,7 @@
 
 import { Environment, Html, OrbitControls, useGLTF } from '@react-three/drei'
 import { Canvas, useThree } from '@react-three/fiber'
+import Image from 'next/image'
 import { Suspense, useEffect } from 'react'
 import * as THREE from 'three'
 import type { RoomSceneHotspot } from '@/types/room'
@@ -82,6 +83,7 @@ function ProductCard({
           style={{
             width: 72,
             height: 72,
+            position: 'relative',
             borderRadius: 16,
             overflow: 'hidden',
             border: isActive ? '3px solid #c8553d' : '2.5px solid rgba(255,255,255,0.9)',
@@ -93,10 +95,12 @@ function ProductCard({
             background: '#f3ece3',
           }}
         >
-          <img
+          <Image
             src={hotspot.imageUrl}
             alt={hotspot.name}
-            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            fill
+            sizes="72px"
+            style={{ objectFit: 'cover', display: 'block' }}
           />
         </div>
         {/* Label pill */}
