@@ -1,10 +1,14 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import Link from 'next/link'
-import { Camera, Image, Sun, ZoomIn, Layers, Info, ArrowRight } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Camera, Image, Sun, ZoomIn, Layers, Info, ArrowRight, Loader2 } from 'lucide-react'
 import { TopNav } from '@/components/artisan/TopNav'
 import { BottomNav } from '@/components/artisan/BottomNav'
+import { supabase } from '@/lib/supabase'
+import { saveDraft } from './draft'
+
+const BUCKET = 'product-images'
 
 const tips = [
   {
@@ -25,16 +29,50 @@ const tips = [
 ]
 
 export default function NewListingStep1Page() {
-  const [photos, setPhotos] = useState<string[]>([])
+  const router = useRouter()
+  const [files, setFiles] = useState<File[]>([])
+  const [previews, setPreviews] = useState<string[]>([])
+  const [uploading, setUploading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const handleFiles = (files: FileList | null) => {
-    if (!files) return
-    const next: string[] = []
-    Array.from(files)
-      .slice(0, 6 - photos.length)
-      .forEach((f) => next.push(URL.createObjectURL(f)))
-    setPhotos((prev) => [...prev, ...next].slice(0, 6))
+  const handleFiles = (fileList: FileList | null) => {
+    if (!fileList) return
+    const remaining = 6 - files.length
+    const newFiles = Array.from(fileList).slice(0, remaining)
+    setFiles((prev) => [...prev, ...newFiles].slice(0, 6))
+    setPreviews((prev) => [...prev, ...newFiles.map((f) => URL.createObjectURL(f))].slice(0, 6))
+  }
+
+  const handleNext = async () => {
+    if (files.length === 0) {
+      saveDraft({ images: [] })
+      router.push('/artisan/list/new/materials')
+      return
+    }
+
+    setUploading(true)
+    const urls: string[] = []
+
+    try {
+      for (const file of files) {
+        const ext = file.name.split('.').pop() ?? 'jpg'
+        const path = `pending/${crypto.randomUUID()}.${ext}`
+        const { error } = await supabase.storage.from(BUCKET).upload(path, file)
+        if (error) {
+          console.error('Upload error:', error)
+          continue
+        }
+        const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
+        urls.push(data.publicUrl)
+      }
+
+      saveDraft({ images: urls })
+      router.push('/artisan/list/new/materials')
+    } catch (err) {
+      console.error('Upload failed:', err)
+    } finally {
+      setUploading(false)
+    }
   }
 
   return (
@@ -106,9 +144,9 @@ export default function NewListingStep1Page() {
                   key={i}
                   className="border-border bg-muted flex aspect-square items-center justify-center overflow-hidden rounded-xl border"
                 >
-                  {photos[i] ? (
+                  {previews[i] ? (
                     <img
-                      src={photos[i]}
+                      src={previews[i]}
                       alt={`Photo ${i + 1}`}
                       className="h-full w-full object-cover"
                     />
@@ -152,16 +190,26 @@ export default function NewListingStep1Page() {
 
         {/* Navigation */}
         <div className="flex items-center justify-between pt-2">
-          <button className="text-stone text-sm font-medium hover:text-charcoal transition-colors">
+          <button className="text-stone text-sm font-medium transition-colors hover:text-charcoal">
             Save for Later
           </button>
-          <Link
-            href="/artisan/list/new/materials"
-            className="bg-forest text-cream flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold shadow-lg transition-all hover:opacity-90 active:scale-95"
+          <button
+            onClick={handleNext}
+            disabled={uploading}
+            className="bg-forest text-cream flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold shadow-lg transition-all hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            Next Step
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+            {uploading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Uploading…
+              </>
+            ) : (
+              <>
+                Next Step
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </button>
         </div>
       </div>
 

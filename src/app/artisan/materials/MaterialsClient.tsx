@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import {
   Search,
   MapPin,
@@ -13,10 +13,16 @@ import {
   Leaf,
   Layers,
   Cog,
+  Pencil,
+  Trash2,
+  Loader2,
+  ClipboardList,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { TopNav } from '@/components/artisan/TopNav'
 import { BottomNav } from '@/components/artisan/BottomNav'
+import { deleteRequest } from './request/actions'
 
 const FILTERS = ['All Hubs', 'Plastic', 'Bamboo', 'Wood', 'Metal', 'Textile']
 
@@ -51,9 +57,40 @@ export type HubRow = {
   materials: { type: MaterialType; qty: string }[]
 }
 
-export function MaterialsClient({ hubs }: { hubs: HubRow[] }) {
+export type RequestRow = {
+  id: string
+  materialType: string
+  quantityKg: number
+  dateNeeded: string
+  description: string | null
+  photoUrl: string | null
+  status: string
+}
+
+const STATUS_STYLES: Record<string, string> = {
+  PENDING: 'bg-mustard/10 text-mustard',
+  ACCEPTED: 'bg-forest/10 text-forest',
+  REJECTED: 'bg-terracotta/10 text-terracotta',
+  COMPLETED: 'bg-stone/10 text-stone',
+}
+
+export function MaterialsClient({ hubs, requests }: { hubs: HubRow[]; requests: RequestRow[] }) {
+  const router = useRouter()
+  const [, startTransition] = useTransition()
   const [search, setSearch] = useState('')
   const [activeFilter, setActiveFilter] = useState('All Hubs')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  function handleDelete(id: string) {
+    setDeletingId(id)
+    startTransition(async () => {
+      await deleteRequest(id)
+      router.refresh()
+      setDeletingId(null)
+      setConfirmDeleteId(null)
+    })
+  }
 
   const filtered = hubs.filter((hub) => {
     const q = search.toLowerCase()
@@ -169,13 +206,103 @@ export function MaterialsClient({ hubs }: { hubs: HubRow[] }) {
                 </div>
               </div>
 
-              <button className="bg-forest text-cream hover:bg-forest/90 flex w-full items-center justify-center gap-2 rounded-2xl py-4 font-bold shadow-lg transition-all">
+              <Link
+                href={`/artisan/materials/${hub.id}`}
+                className="bg-forest text-cream hover:bg-forest/90 flex w-full items-center justify-center gap-2 rounded-2xl py-4 font-bold shadow-lg transition-all"
+              >
                 <MessageSquare className="h-5 w-5" />
                 Contact Hub
-              </button>
+              </Link>
             </div>
           ))}
         </section>
+
+        {/* My Requests */}
+        {requests.length > 0 && (
+          <section className="space-y-4">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="text-forest h-5 w-5" />
+              <h2 className="font-heading text-forest text-lg font-bold">My Requests</h2>
+              <span className="bg-forest/10 text-forest rounded-full px-2 py-0.5 text-xs font-bold">
+                {requests.length}
+              </span>
+            </div>
+
+            {requests.map((req) => (
+              <div
+                key={req.id}
+                className="border-border flex flex-col gap-3 rounded-2xl border bg-white p-4 shadow-sm"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-heading text-forest truncate text-base font-bold capitalize">
+                      {req.materialType}
+                    </p>
+                    <p className="text-stone mt-0.5 text-xs">
+                      {req.quantityKg}kg · Needed by {req.dateNeeded}
+                    </p>
+                    {req.description && (
+                      <p className="text-stone mt-1 line-clamp-2 text-xs">{req.description}</p>
+                    )}
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wider uppercase ${STATUS_STYLES[req.status] ?? 'bg-stone/10 text-stone'}`}
+                  >
+                    {req.status}
+                  </span>
+                </div>
+
+                {req.photoUrl && (
+                  <img
+                    src={req.photoUrl}
+                    alt="Reference"
+                    className="h-28 w-full rounded-xl object-cover"
+                  />
+                )}
+
+                <div className="flex gap-2">
+                  <Link
+                    href={`/artisan/materials/request/${req.id}/edit`}
+                    className="border-border text-stone hover:text-forest flex flex-1 items-center justify-center gap-1.5 rounded-xl border py-2 text-xs font-semibold transition-colors"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </Link>
+
+                  {confirmDeleteId === req.id ? (
+                    <div className="flex flex-1 gap-2">
+                      <button
+                        onClick={() => handleDelete(req.id)}
+                        disabled={deletingId === req.id}
+                        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-red-600 py-2 text-xs font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
+                      >
+                        {deletingId === req.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          'Confirm'
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="border-border text-stone flex flex-1 items-center justify-center rounded-xl border py-2 text-xs font-semibold"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setConfirmDeleteId(req.id)}
+                      className="border-border text-stone flex flex-1 items-center justify-center gap-1.5 rounded-xl border py-2 text-xs font-semibold transition-colors hover:border-red-200 hover:text-red-600"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Delete
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </section>
+        )}
 
         {/* Can't find CTA */}
         <section className="text-center">
