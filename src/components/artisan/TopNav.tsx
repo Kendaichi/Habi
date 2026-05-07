@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Bell, ShoppingCart, X, Trash2 } from 'lucide-react'
+import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
 
 interface TopNavProps {
@@ -22,13 +23,13 @@ export function TopNav({ profileImage }: TopNavProps) {
     <>
       <header className="bg-cream border-stone/20 sticky top-0 z-50 flex w-full items-center justify-between border-b px-6 py-3">
         <div className="flex items-center gap-3">
-          <div className="border-forest/30 h-10 w-10 overflow-hidden rounded-full border-2">
+          <Link href="/shared/profile" className="border-forest/30 block h-10 w-10 overflow-hidden rounded-full border-2">
             <img
               alt="User Profile"
               className="h-full w-full object-cover"
               src={profileImage ?? '/Habi_Logo.png'}
             />
-          </div>
+          </Link>
           <div className="flex flex-col">
             <span className="text-forest font-['Noto_Serif'] text-lg font-bold">Habi</span>
           </div>
