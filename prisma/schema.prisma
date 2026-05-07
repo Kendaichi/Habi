@@ -57,6 +57,8 @@ model JunkShop {
   materials     String[]
   verifiedAt    DateTime?
   address       String?
+  image         String?
+  galleryImages String[]
   materialsList Material[]
   traceChains   TraceabilityChain[]
 }

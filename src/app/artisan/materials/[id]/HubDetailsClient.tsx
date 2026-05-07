@@ -47,30 +47,15 @@ const processSteps = [
   },
 ]
 
-const galleryImgs = [
-  {
-    src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDOh8id_otJI8rJ_Wz2_MwvrH-x7JXf7Az_IPBJIpFMwUkP_JaMpHEG-CBa7r4gKA0ydqpNVnM27MJlpPO4ImCmBpKCMgKWIOFk12iWllUYBqr_evz6SI24wncCeUdR6Hc44v8VGf4XhUwRCJonlXRN3I_-Z5r4eNcV5hY513_pHC2ck6kaGi5tUDbUeLfBpqWl3Kh1BIk6dInOJNS-Nezl6wQUoh2hThaZpkaVMs3Q3teWonhgjvO-FOHs_2I9yHjkNSV2w0IcB6aI',
-    span: 'col-span-2 row-span-2',
-  },
-  {
-    src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCn1XXrzurX8XE-4BgEEJsKd_41pc9_PE-ft9FzyZ6ZwdLp4lQ51vT6k8CQU09CFLq2bVehfnE_Qr2bsqwKN9FOZ677w7huMJojv31P_VxfcCSg1y5-lYXklImuWz5qr0WUP2cx_tfpfqlcqW0D_m2Fcs1JOCwSR3JPZcmsCHHAq8OlpgEvhSxOqBxq7vr7vuC7-CBriAJeiPm7BDJT1vUhWDApLWJhzwyNwOTIolEpTX3uU_Un6zbFOvTvwMUH0Gwz-i2VFQFOQoHa',
-    span: 'col-span-2',
-  },
-  {
-    src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB4EHDl6053Smk5zzAjPoYLhDkI2nY6xilGWOeJkuDTgpPTAEK3xSYaJpXUUsy8u1Hcd9HlhJKPkWCEhO4hjvNODxZWUTDb8AoKuSYFvVjLpl5JPZWyxaz3vJyUMmbIXiDhWOstexOXeefOYn0g1u8rBDCMbF4sem1bqgTWkqcKN1AaQqeHKFgNzP8cDdRBsR0Nw9gmPI5BduNCSFdW5a8g8UzMkj0RJdFadQmR-Kq51gpt8qJKMPok5yKe3bN67w9P7otssy6IMUT6',
-    span: '',
-  },
-  {
-    src: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDoMZinIAibVb4LF2gYau6dMFs983mQ7LKFFYK0dUftiKY1EEAAsMDbwbMmDk3YWzC3g73ONcaSbpv82uvBY7BfXXO-FPyosjf5gu5AhT3xfvwqsdgw2KPHdiF1qWqyQkpBTYKv2I9KE-wWVz-QMyOLB1lXaWtoxozO5lA0a-TYv-wvvgHc95rK7EuK-DIUpB_HxWv8GXyBuc2smP1xkeVPSNXDCAf32kRXKGGLelem_QdHRfBQ_BVVV7qASXqjRKFtLAQZi',
-    span: '',
-  },
-]
+const GALLERY_SPANS = ['col-span-2 row-span-2', 'col-span-2', '', '']
 
 export type ShopData = {
   id: string
   name: string
   address: string
   isVerified: boolean
+  image?: string
+  galleryImages: string[]
   materials: {
     id: string
     type: string
@@ -136,6 +121,26 @@ export function HubDetailsClient({ shop }: { shop: ShopData }) {
       <div className="space-y-10 px-5 pt-6">
         {/* Hero */}
         <section>
+          {shop.image && (
+            <div className="aspect-4/3S relative mb-6 overflow-hidden rounded-3xl shadow-lg">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={shop.image}
+                alt={shop.name}
+                className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+              />
+              <div className="absolute right-4 bottom-4 left-4 flex items-center gap-3 rounded-2xl bg-white/90 p-3 backdrop-blur-md">
+                <MapPin className="text-terracotta h-4 w-4 shrink-0" />
+                <div>
+                  <p className="text-terracotta text-[10px] font-bold tracking-wider uppercase">
+                    Location
+                  </p>
+                  <p className="text-charcoal text-sm font-bold">{shop.address}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="mb-4 flex items-center gap-2">
             {shop.isVerified && (
               <span className="bg-forest/10 text-forest flex items-center gap-1 rounded-full px-3 py-1 text-[10px] font-bold tracking-wider uppercase">
@@ -175,15 +180,17 @@ export function HubDetailsClient({ shop }: { shop: ShopData }) {
             </button>
           </div>
 
-          <div className="border-border mt-6 flex items-center gap-3 rounded-2xl border bg-white p-4">
-            <MapPin className="text-terracotta h-5 w-5 shrink-0" />
-            <div>
-              <p className="text-terracotta text-[10px] font-bold tracking-wider uppercase">
-                Location
-              </p>
-              <p className="text-charcoal text-sm font-bold">{shop.address}</p>
+          {!shop.image && (
+            <div className="border-border mt-6 flex items-center gap-3 rounded-2xl border bg-white p-4">
+              <MapPin className="text-terracotta h-5 w-5 shrink-0" />
+              <div>
+                <p className="text-terracotta text-[10px] font-bold tracking-wider uppercase">
+                  Location
+                </p>
+                <p className="text-charcoal text-sm font-bold">{shop.address}</p>
+              </div>
             </div>
-          </div>
+          )}
         </section>
 
         {/* Process */}
@@ -275,23 +282,25 @@ export function HubDetailsClient({ shop }: { shop: ShopData }) {
         </section>
 
         {/* Gallery */}
-        <section className="pb-4">
-          <h3 className="font-heading text-forest mb-6 text-center text-xl font-bold">
-            Inside the Hub
-          </h3>
-          <div className="grid auto-rows-[150px] grid-cols-2 gap-3">
-            {galleryImgs.map((img, i) => (
-              <div key={i} className={`overflow-hidden rounded-3xl ${img.span}`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={img.src}
-                  alt={`Hub gallery ${i + 1}`}
-                  className="h-full w-full object-cover"
-                />
-              </div>
-            ))}
-          </div>
-        </section>
+        {shop.galleryImages.length > 0 && (
+          <section className="pb-4">
+            <h3 className="font-heading text-forest mb-6 text-center text-xl font-bold">
+              Inside the Hub
+            </h3>
+            <div className="grid auto-rows-[150px] grid-cols-2 gap-3">
+              {shop.galleryImages.map((src, i) => (
+                <div key={i} className={`overflow-hidden rounded-3xl ${GALLERY_SPANS[i] ?? ''}`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={src}
+                    alt={`Hub gallery ${i + 1}`}
+                    className="h-full w-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
       </div>
 
       <BottomNav />
