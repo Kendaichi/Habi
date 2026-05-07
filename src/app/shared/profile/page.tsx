@@ -1,5 +1,6 @@
 import { getCurrentUserProfile } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { Role } from '@/generated/prisma/enums'
 import { BottomNav as ArtisanBottomNav } from '@/components/artisan/BottomNav'
 import { BuyerBottomNav } from '@/components/buyer/BuyerBottomNav'
@@ -58,6 +59,13 @@ const notificationItems = [
   { label: 'Community Updates', desc: 'News from the EU-PH Green Economy guild', active: true },
   { label: 'Direct Messages', desc: 'Communication with buyers', active: false },
 ]
+
+async function signOut() {
+  'use server'
+  const supabase = await createSupabaseServerClient()
+  await supabase.auth.signOut()
+  redirect('/onboarding/signin')
+}
 
 export default async function ProfilePage() {
   const profile = await getCurrentUserProfile()
@@ -315,6 +323,14 @@ export default async function ProfilePage() {
           <p className="text-stone mt-6 text-center text-[10px]">
             © 2024 Habi Social Enterprise. All rights reserved.
           </p>
+          <form action={signOut} className="mt-6 flex justify-center">
+            <button
+              type="submit"
+              className="text-terracotta hover:text-terracotta/70 text-sm font-semibold transition-colors"
+            >
+              Log Out
+            </button>
+          </form>
         </footer>
       </main>
 
