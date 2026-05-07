@@ -131,7 +131,7 @@ export function InventoryClient({ materials }: { materials: MaterialRow[] }) {
                     </div>
                   </div>
                   <Link
-                    href="/junkshop/inventory/log"
+                    href={`/junkshop/inventory/${item.id}/edit`}
                     className="bg-terracotta mt-5 w-full rounded-xl py-3 text-center text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 active:scale-95"
                   >
                     Update Stock
