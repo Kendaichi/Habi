@@ -305,7 +305,7 @@ function mergeProviderPayload(
 export function buildProviderRecommendationContext(
   recommendations: RoomRecommendation[],
   limit = 4,
-): SubmitThreeDAIRoomRequest['recommendations'] {
+): NonNullable<SubmitThreeDAIRoomRequest['recommendations']> {
   return recommendations.slice(0, limit).map((recommendation) => {
     const normalizedImageUrls = normalizeProductImageUrls(recommendation.imageUrls)
     const primaryImageUrl = selectPrimaryProductImageUrl(normalizedImageUrls)
