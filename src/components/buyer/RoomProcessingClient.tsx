@@ -25,13 +25,13 @@ function formatTime(seconds: number) {
   return m > 0 ? `${m}m ${s}s` : `${s}s`
 }
 
-function stageFromPercent(pct: number | null | undefined): string {
-  if (pct == null) return 'Analyzing room photo…'
-  if (pct < 20) return 'Analyzing room geometry and free space…'
-  if (pct < 45) return 'Matching artisan pieces to the room…'
-  if (pct < 70) return 'Composing a colored room world…'
-  if (pct < 90) return 'Finalizing placements and materials…'
-  return 'Uploading the generated world asset…'
+function reconstructionStageFromPercent(pct: number | null | undefined): string {
+  if (pct == null) return 'Detecting walls and camera angle...'
+  if (pct < 20) return 'Estimating depth and room proportions...'
+  if (pct < 45) return 'Preserving existing furniture and blocked areas...'
+  if (pct < 70) return 'Placing products into empty zones...'
+  if (pct < 90) return 'Validating reconstruction quality...'
+  return 'Preparing the reconstructed 3D room...'
 }
 
 export function RoomProcessingClient({ roomId }: RoomProcessingClientProps) {
@@ -137,14 +137,14 @@ export function RoomProcessingClient({ roomId }: RoomProcessingClientProps) {
 
           <h1 className="font-heading text-charcoal mt-5 text-center text-3xl font-semibold">
             {isHelperProvider
-              ? 'Generating 3D room world'
+              ? 'Validating room candidate'
               : isComposedWorld
-                ? 'Composing room world'
-                : 'Building preview room'}
+                ? 'Reconstructing room'
+                : 'Reconstructing your room'}
           </h1>
 
           <p className="text-stone mt-2 text-center text-sm leading-relaxed">
-            {status ? stageFromPercent(pct) : 'Starting…'}
+            {status ? reconstructionStageFromPercent(pct) : 'Starting...'}
           </p>
 
           {/* Progress bar */}
@@ -203,8 +203,8 @@ export function RoomProcessingClient({ roomId }: RoomProcessingClientProps) {
         {isGeneratedWorld && !error ? (
           <p className="text-stone text-center text-xs leading-relaxed">
             {isHelperProvider
-              ? '3D AI Studio is generating the room world directly from your room photo.'
-              : 'We are analyzing your photo, organizing products, and composing a generated room world.'}
+              ? 'Habi already built a geometry-first room shell and is checking an optional provider candidate.'
+              : 'We are preserving the uploaded room structure first, then adding products only where they fit.'}
             <br />This usually completes in under a minute, depending on provider queue time.
           </p>
         ) : null}

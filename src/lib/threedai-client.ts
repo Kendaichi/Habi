@@ -7,11 +7,11 @@ export type ThreeDAIModel = 'tripo' | 'trellis2'
 export type SubmitThreeDAIRoomRequest = {
   roomId: string
   imageUrl: string
+  sourceViews?: string[]
   roomTheme: string
   presetId: string
   notes?: string
-  recommendations: Array<{
-    productId: string
+  recommendations?: Array<{
     productName: string
     materialType: string
     primaryImageUrl: string | null
@@ -103,7 +103,17 @@ export function normalizeThreeDAIStatus(value: unknown): ProviderJobStatus {
 }
 
 function buildNegativePrompt(input: SubmitThreeDAIRoomRequest): string {
-  const avoided = ['floating furniture', 'distorted walls', 'warped floor']
+  const avoided = [
+    'floating furniture',
+    'distorted walls',
+    'warped floor',
+    'changed room layout',
+    'new room design',
+    'replaced existing furniture',
+    'invented windows',
+    'different camera angle',
+    'hallucinated architecture',
+  ]
   if (input.notes?.toLowerCase().includes('minimal')) {
     avoided.push('clutter')
   }
@@ -203,6 +213,22 @@ function getSubmitPath(model: ThreeDAIModel): string {
     : '/v1/3d-models/tripo/image-to-3d/3.1/'
 }
 
+function getTripoMultiviewPath(): string {
+  return '/v1/3d-models/tripo/multiview-to-3d/3.1/'
+}
+
+function getReferenceImages(input: SubmitThreeDAIRoomRequest): string[] {
+  return [input.imageUrl, ...(input.sourceViews ?? [])]
+    .filter((value, index, array) => Boolean(value) && array.indexOf(value) === index)
+    .slice(0, 4)
+}
+
+function imageReference(value: string): { image_url: string } | { image: string } {
+  return value.startsWith('http://') || value.startsWith('https://')
+    ? { image_url: value }
+    : { image: value }
+}
+
 function extractFailureReason(data: Record<string, unknown>): string | null {
   if (typeof data.failure_reason === 'string' && data.failure_reason) {
     return data.failure_reason
@@ -220,6 +246,44 @@ export async function submitThreeDAIRoomJob(
   input: SubmitThreeDAIRoomRequest,
 ): Promise<SubmitThreeDAIRoomResponse> {
   const model = getThreeDAIModel()
+  const referenceImages = getReferenceImages(input)
+
+  if (model === 'tripo' && referenceImages.length >= 2) {
+    const response = await fetch(`${getApiUrl()}${getTripoMultiviewPath()}`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        images: referenceImages.map(imageReference),
+        texture: true,
+        pbr: true,
+        texture_quality: 'standard',
+        geometry_quality: 'standard',
+        texture_alignment: 'original_image',
+        negative_prompt: buildNegativePrompt(input),
+      }),
+      cache: 'no-store',
+    })
+
+    if (!response.ok) {
+      const errText = await response.text().catch(() => '')
+      throw new Error(`3D AI Studio multiview submit failed ${response.status}: ${errText.slice(0, 200)}`)
+    }
+
+    const data = (await response.json()) as Record<string, unknown>
+    const externalJobId = typeof data.task_id === 'string' ? data.task_id : ''
+
+    if (!externalJobId) {
+      throw new Error('3D AI Studio multiview response missing task_id')
+    }
+
+    return {
+      externalJobId,
+      status: 'PENDING',
+      providerName: `${getThreeDAIProviderName()}-candidate-multiview`,
+      raw: data,
+    }
+  }
+
   const formData = model === 'trellis2' ? buildTrellisFormData(input) : buildTripoFormData(input)
 
   // Don't set Content-Type — fetch sets it automatically with the multipart boundary

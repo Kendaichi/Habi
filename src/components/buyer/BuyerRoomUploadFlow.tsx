@@ -5,7 +5,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useRef, useState, useTransition } from 'react'
 import { ROOM_PRESETS } from '@/lib/room-presets'
+import { supabase } from '@/lib/supabase'
 import type { RoomImageInsights, RoomPresetId } from '@/types/room'
+
+const ROOM_SCAN_BUCKET = 'room-scans'
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value))
@@ -113,9 +116,11 @@ async function analyzeImage(file: File): Promise<RoomImageInsights> {
 export function BuyerRoomUploadFlow() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const extraInputRef = useRef<HTMLInputElement | null>(null)
   const [selectedPreset, setSelectedPreset] = useState<RoomPresetId>(ROOM_PRESETS[0].id)
   const [notes, setNotes] = useState('')
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [sourceViews, setSourceViews] = useState<string[]>([])
   const [imageInsights, setImageInsights] = useState<RoomImageInsights | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -136,16 +141,61 @@ export function BuyerRoomUploadFlow() {
     reader.readAsDataURL(file)
   }
 
+  function handleExtraFiles(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []).slice(0, 3)
+    if (files.length === 0) return
+
+    for (const file of files) {
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setSourceViews((current) => [...current, reader.result as string].slice(0, 3))
+        }
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  async function uploadRoomView(dataUrl: string, index: number): Promise<string> {
+    if (!supabase) return dataUrl
+
+    try {
+      const blob = await fetch(dataUrl).then((response) => response.blob())
+      const extension = blob.type.includes('png') ? 'png' : blob.type.includes('webp') ? 'webp' : 'jpg'
+      const path = `buyer-room/${crypto.randomUUID()}-${index}.${extension}`
+      const { error: uploadError } = await supabase.storage
+        .from(ROOM_SCAN_BUCKET)
+        .upload(path, blob, { contentType: blob.type || 'image/jpeg', upsert: false })
+
+      if (uploadError) return dataUrl
+
+      const { data } = supabase.storage.from(ROOM_SCAN_BUCKET).getPublicUrl(path)
+      return data.publicUrl || dataUrl
+    } catch {
+      return dataUrl
+    }
+  }
+
   function handleGenerate() {
     setError(null)
+    if (!previewUrl) {
+      setError('Upload a primary room photo before generating.')
+      return
+    }
 
     startTransition(async () => {
+      const uploadedViews = await Promise.all(
+        [previewUrl, ...sourceViews].map((view, index) => uploadRoomView(view, index)),
+      )
+      const [primaryImageUrl, ...additionalViews] = uploadedViews
+
       const response = await fetch('/api/room/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           presetId: selectedPreset,
-          imageUrl: previewUrl ?? undefined,
+          imageUrl: primaryImageUrl,
+          sourceViews: additionalViews,
           notes,
           imageInsights: imageInsights ?? undefined,
         }),
@@ -223,6 +273,59 @@ export function BuyerRoomUploadFlow() {
           onChange={handleFileChange}
         />
 
+        <input
+          ref={extraInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleExtraFiles}
+        />
+
+        {previewUrl ? (
+          <div className="mt-5 rounded-[24px] border border-forest/15 bg-white/75 p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-forest text-xs font-semibold uppercase tracking-[0.2em]">
+                  Optional views
+                </p>
+                <p className="text-stone mt-1 text-sm">
+                  Add left, right, or corner angles to improve full-room mesh accuracy.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => extraInputRef.current?.click()}
+                className="shrink-0 rounded-full border border-forest/20 px-4 py-2 text-sm font-semibold text-forest"
+              >
+                Add
+              </button>
+            </div>
+
+            {sourceViews.length > 0 ? (
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                {sourceViews.map((view, index) => (
+                  <div
+                    key={`${view.slice(0, 24)}-${index}`}
+                    className="relative h-20 overflow-hidden rounded-2xl border border-white bg-cover bg-center"
+                    style={{ backgroundImage: `url(${view})` }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setSourceViews((current) => current.filter((_, viewIndex) => viewIndex !== index))
+                      }
+                      className="absolute right-1 top-1 rounded-full bg-charcoal/70 px-2 py-0.5 text-[10px] font-bold text-white"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <div className="mt-8 grid gap-3">
           {ROOM_PRESETS.map((preset) => {
             const selected = preset.id === selectedPreset
@@ -292,7 +395,7 @@ export function BuyerRoomUploadFlow() {
           className="bg-terracotta text-cream mt-4 flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-4 text-lg font-semibold shadow-[0_18px_40px_rgba(200,85,61,0.24)] transition hover:opacity-95 disabled:opacity-70"
         >
           {isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
-          {previewUrl ? 'Visualize Room' : 'Preview Room'}
+          {previewUrl ? 'Reconstruct Room' : 'Preview Room'}
         </button>
       </div>
     </div>

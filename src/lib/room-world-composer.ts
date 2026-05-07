@@ -2,12 +2,15 @@ import * as THREE from 'three'
 import { getRoomPreset } from '@/lib/room-presets'
 import type {
   RoomAnalysis,
+  RoomDetectedObject,
   RoomGenerateRequest,
   RoomPlacedItem,
+  RoomPlacementZone,
   RoomRecommendation,
   RoomSceneAnchor,
   RoomSceneData,
   RoomSceneHotspot,
+  RoomStructuralAnalysis,
 } from '@/types/room'
 
 type ComposedWorld = {
@@ -81,13 +84,45 @@ function scoreRecommendationForAnchor(recommendation: RoomRecommendation, anchor
   return score
 }
 
+function anchorsFromStructuralAnalysis(structuralAnalysis?: RoomStructuralAnalysis): RoomSceneAnchor[] {
+  if (!structuralAnalysis) return []
+
+  return structuralAnalysis.emptyPlacementZones
+    .filter((zone) => !zone.blockedBy?.length && zone.confidence >= 0.46)
+    .map((zone) => ({
+      id: zone.id,
+      label: zone.label,
+      type: zone.type,
+      confidence: zone.confidence,
+      bounds: zone.bounds,
+      preferredMaterialTypes: zone.preferredMaterialTypes,
+      blocked: false,
+    }))
+}
+
+function zoneForAnchor(
+  structuralAnalysis: RoomStructuralAnalysis | undefined,
+  anchor: RoomSceneAnchor,
+): RoomPlacementZone | null {
+  return structuralAnalysis?.emptyPlacementZones.find((zone) => zone.id === anchor.id) ?? null
+}
+
+function objectKindAllowed(itemKind: RoomPlacedItem['objectKind'], zone: RoomPlacementZone | null) {
+  if (!zone) return true
+  return zone.preferredObjectKinds.includes(itemKind)
+}
+
 function placeRecommendations(
   roomTheme: string,
   analysis: RoomAnalysis,
   recommendations: RoomRecommendation[],
+  structuralAnalysis?: RoomStructuralAnalysis,
 ): RoomPlacedItem[] {
   const placedItems: RoomPlacedItem[] = []
-  const anchors = analysis.anchors.filter((anchor) => !anchor.blocked)
+  const structuralAnchors = anchorsFromStructuralAnalysis(structuralAnalysis)
+  const anchors = (structuralAnchors.length > 0 ? structuralAnchors : analysis.anchors).filter(
+    (anchor) => !anchor.blocked,
+  )
   const desiredCount = Math.max(4, Math.min(6, Math.min(recommendations.length, anchors.length)))
   const usedListings = new Set<string>()
   const usedAnchors = new Set<string>()
@@ -105,7 +140,11 @@ function placeRecommendations(
       if (usedListings.has(recommendation.listingId)) continue
       for (const anchor of anchors) {
         if (usedAnchors.has(anchor.id)) continue
-        const score = scoreRecommendationForAnchor(recommendation, anchor)
+        const objectKind = inferObjectKind(recommendation, anchor)
+        const zone = zoneForAnchor(structuralAnalysis, anchor)
+        if (!objectKindAllowed(objectKind, zone)) continue
+        const clearanceBoost = zone ? Math.min(12, zone.minClearanceMeters * 8) : 0
+        const score = scoreRecommendationForAnchor(recommendation, anchor) + clearanceBoost
         if (!best || score > best.score) {
           best = { recommendation, anchor, score }
         }
@@ -148,6 +187,7 @@ function placeRecommendations(
 }
 
 function buildPreviewImage(theme: string, scene: RoomSceneData): string {
+  const sourceImage = scene.structuralAnalysis?.imageUrl
   const labels = scene.placedItems
     .map((item) => {
       const x = item.bounds.x * 4.2
@@ -175,11 +215,18 @@ function buildPreviewImage(theme: string, scene: RoomSceneData): string {
           <stop offset="1" stop-color="${scene.palette.shadow}"/>
         </linearGradient>
       </defs>
-      <rect width="420" height="740" fill="url(#wall)"/>
-      <rect y="456" width="420" height="284" fill="url(#floor)"/>
-      <rect x="0" y="438" width="420" height="22" fill="${scene.palette.highlight}" fill-opacity="0.88"/>
+      ${
+        sourceImage
+          ? `<image href="${escapeSvg(sourceImage)}" width="420" height="740" preserveAspectRatio="xMidYMid slice"/>
+             <rect width="420" height="740" fill="${scene.palette.wall}" fill-opacity="0.16"/>`
+          : `<rect width="420" height="740" fill="url(#wall)"/>
+             <rect y="456" width="420" height="284" fill="url(#floor)"/>`
+      }
+      <rect x="0" y="438" width="420" height="22" fill="${scene.palette.highlight}" fill-opacity="${sourceImage ? '0.42' : '0.88'}"/>
       <rect x="38" y="32" width="210" height="48" rx="24" fill="#ffffff" fill-opacity="0.72"/>
       <text x="143" y="62" text-anchor="middle" font-size="21" font-family="Georgia" fill="#1b5e3f">${escapeSvg(theme)}</text>
+      <rect x="38" y="92" width="228" height="26" rx="13" fill="#1b5e3f" fill-opacity="0.78"/>
+      <text x="152" y="110" text-anchor="middle" font-size="13" font-family="Arial" fill="#fffaf5">Reconstructed from your room photo</text>
       <rect x="258" y="84" width="108" height="132" rx="36" fill="${scene.palette.accent}" fill-opacity="0.14"/>
       <rect x="58" y="108" width="78" height="96" rx="28" fill="#ffffff" fill-opacity="0.22"/>
       <rect x="146" y="504" width="130" height="54" rx="26" fill="${scene.palette.accent}" fill-opacity="0.18"/>
@@ -200,10 +247,40 @@ function arrayBufferToBytes(buffer: ArrayBufferLike): Uint8Array {
   return new Uint8Array(buffer.slice(0))
 }
 
+function preservedObjectToMesh(
+  object: RoomDetectedObject,
+  roomWidth: number,
+  roomDepth: number,
+): MeshDef {
+  const width = Math.max(0.42, (object.bounds.width / 100) * roomWidth)
+  const depth = Math.max(0.32, (object.bounds.height / 100) * roomDepth * 0.72)
+  const height =
+    object.category === 'cabinet' || object.category === 'shelf'
+      ? 1.35
+      : object.category === 'table'
+        ? 0.56
+        : 0.82
+  const x = (object.bounds.x / 100) * roomWidth - roomWidth / 2 + width / 2
+  const z = (object.bounds.y / 100) * roomDepth - roomDepth / 2 + depth / 2
+  const geometry = new THREE.BoxGeometry(width, height, depth)
+  geometry.translate(x, height / 2, z)
+  return {
+    geometry,
+    color:
+      object.category === 'table'
+        ? '#80624a'
+        : object.category === 'cabinet' || object.category === 'shelf'
+          ? '#6b5b4a'
+          : '#9a8068',
+    roughness: 0.88,
+    metalness: 0.02,
+  }
+}
+
 function createMeshDefs(scene: RoomSceneData): MeshDef[] {
-  const roomWidth = 7.2
-  const roomDepth = 6.2
-  const roomHeight = 3.1
+  const roomWidth = scene.structuralAnalysis?.dimensions.widthMeters ?? 7.2
+  const roomDepth = scene.structuralAnalysis?.dimensions.depthMeters ?? 6.2
+  const roomHeight = scene.structuralAnalysis?.dimensions.heightMeters ?? 3.1
   const defs: MeshDef[] = []
 
   const makePlane = (width: number, height: number, color: string, transform: (g: THREE.BufferGeometry) => void) => {
@@ -228,17 +305,18 @@ function createMeshDefs(scene: RoomSceneData): MeshDef[] {
     g.translate(roomWidth / 2, roomHeight / 2, 0)
   })
 
-  const rug = new THREE.BoxGeometry(2.6, 0.05, 1.8)
+  const rug = new THREE.BoxGeometry(roomWidth * 0.34, 0.05, roomDepth * 0.28)
   rug.translate(0.25, 0.03, 0.55)
   defs.push({ geometry: rug, color: scene.palette.accent, roughness: 0.95, metalness: 0.02 })
 
-  const windowPane = new THREE.BoxGeometry(1.6, 1.1, 0.04)
-  windowPane.translate(2.05, 2.0, -roomDepth / 2 + 0.03)
+  const lightFromLeft = scene.structuralAnalysis?.lighting.direction === 'left'
+  const windowPane = new THREE.BoxGeometry(roomWidth * 0.22, 1.1, 0.04)
+  windowPane.translate(lightFromLeft ? -roomWidth * 0.28 : roomWidth * 0.28, 2.0, -roomDepth / 2 + 0.03)
   defs.push({ geometry: windowPane, color: '#f5f8fb', roughness: 0.25, metalness: 0.05 })
 
-  const consoleTable = new THREE.BoxGeometry(1.4, 0.78, 0.42)
-  consoleTable.translate(-2.1, 0.39, -2.0)
-  defs.push({ geometry: consoleTable, color: '#7b5a45', roughness: 0.86, metalness: 0.04 })
+  for (const object of scene.structuralAnalysis?.preservedObjects ?? []) {
+    if (object.preserve) defs.push(preservedObjectToMesh(object, roomWidth, roomDepth))
+  }
 
   for (const item of scene.placedItems) {
     const x = (item.bounds.x / 100) * roomWidth - roomWidth / 2 + ((item.bounds.width / 100) * roomWidth) / 2
@@ -420,12 +498,19 @@ function createGlbDataUri(meshes: MeshDef[]): string {
 }
 
 export function composeRoomWorld(
-  input: Pick<RoomGenerateRequest, 'presetId'>,
+  input: Pick<RoomGenerateRequest, 'presetId' | 'imageUrl' | 'sourceViews'>,
   analysis: RoomAnalysis,
   recommendations: RoomRecommendation[],
+  structuralAnalysis?: RoomStructuralAnalysis,
 ): ComposedWorld {
   const preset = getRoomPreset(input.presetId)
-  const placedItems = placeRecommendations(preset.roomTheme, analysis, recommendations)
+  const effectiveAnchors = anchorsFromStructuralAnalysis(structuralAnalysis)
+  const effectiveAnalysis: RoomAnalysis = {
+    ...analysis,
+    anchors: effectiveAnchors.length > 0 ? effectiveAnchors : analysis.anchors,
+    warnings: Array.from(new Set([...analysis.warnings, ...(structuralAnalysis?.warnings ?? [])])),
+  }
+  const placedItems = placeRecommendations(preset.roomTheme, effectiveAnalysis, recommendations, structuralAnalysis)
   const hotspots: RoomSceneHotspot[] = placedItems.map((item) => ({
     listingId: item.listingId,
     productId: item.productId,
@@ -440,7 +525,8 @@ export function composeRoomWorld(
     bounds: item.bounds,
   }))
 
-  const generationWarnings = [...analysis.warnings]
+  const reconstructionWarnings = structuralAnalysis?.warnings ?? []
+  const generationWarnings = [...effectiveAnalysis.warnings]
   if (placedItems.length < 4) {
     generationWarnings.push('Limited anchor confidence reduced furnishing density for this room.')
   }
@@ -448,12 +534,17 @@ export function composeRoomWorld(
   const scene: RoomSceneData = {
     title: `${preset.name} Reconstruction`,
     theme: preset.roomTheme,
-    worldKind: 'composed',
-    palette: analysis.palette,
-    analysis,
-    anchors: analysis.anchors,
+    worldKind: 'reconstructed',
+    palette: effectiveAnalysis.palette,
+    analysis: effectiveAnalysis,
+    structuralAnalysis,
+    anchors: effectiveAnalysis.anchors,
     placedItems,
     generationWarnings,
+    reconstructionWarnings,
+    qualityScore: structuralAnalysis?.qualityScore ?? 0.55,
+    reconstructionSource: structuralAnalysis?.source === 'vision-provider' ? 'deterministic' : 'heuristic',
+    sourceViews: input.sourceViews,
     hotspots,
   }
 

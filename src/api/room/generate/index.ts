@@ -10,6 +10,7 @@ export const POST: Handler = async (req: NextRequest) => {
     const body = (await req.json()) as {
       presetId?: string
       imageUrl?: string
+      sourceViews?: string[]
       notes?: string
       simulateFailure?: boolean
       imageInsights?: import('@/types/room').RoomImageInsights
@@ -23,6 +24,7 @@ export const POST: Handler = async (req: NextRequest) => {
       {
         presetId: body.presetId as 'sunlit-sala' | 'heritage-den' | 'maker-loft',
         imageUrl: body.imageUrl,
+        sourceViews: body.sourceViews,
         notes: body.notes,
         simulateFailure: body.simulateFailure,
         imageInsights: body.imageInsights,
