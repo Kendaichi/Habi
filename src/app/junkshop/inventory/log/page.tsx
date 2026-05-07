@@ -55,7 +55,7 @@ export default function LogMaterialPage() {
             Sorted for the Circular Economy
           </h2>
           <p className="mx-auto max-w-md font-['Inter'] text-base text-[#404942]">
-            Your contributions help Mindanao's artisans turn waste into heritage-quality crafts.
+            Your contributions help Mindanao&apos;s artisans turn waste into heritage-quality crafts.
           </p>
         </div>
 
@@ -212,7 +212,7 @@ export default function LogMaterialPage() {
             <div>
               <h5 className="font-['Inter'] font-bold text-[#00452a]">Trust Score Impact</h5>
               <p className="text-sm text-[#404942]">
-                Your sorted listing increases your junk shop's reliability rating by +5.
+                Your sorted listing increases your junk shop&apos;s reliability rating by +5.
               </p>
             </div>
           </div>
