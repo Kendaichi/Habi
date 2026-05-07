@@ -247,7 +247,7 @@ export default async function ArtisanDashboardPage() {
         </DashboardSection>
 
         {/* My Sustainable Space */}
-        <div className="relative h-44 overflow-hidden rounded-2xl">
+        <Link href="/artisan/ai-room" className="relative block h-44 overflow-hidden rounded-2xl">
           <div
             className="absolute inset-0"
             style={{
@@ -272,13 +272,13 @@ export default async function ArtisanDashboardPage() {
               </span>
             </div>
             <div>
-              <p className="font-heading text-cream text-xl font-bold leading-snug">
+              <p className="font-heading text-cream text-xl leading-snug font-bold">
                 My Sustainable Space
               </p>
-              <p className="text-cream/50 mt-1 text-xs">Scan & redesign with AI-powered vision</p>
+              <p className="text-cream/50 mt-1 text-xs">Product Impact and Visualization</p>
             </div>
           </div>
-        </div>
+        </Link>
       </div>
 
       <BottomNav />
