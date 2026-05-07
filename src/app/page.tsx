@@ -1,16 +1,13 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { getCurrentUserProfile } from '@/lib/auth'
+import { getRoleHomeRoute, type AppRole } from '@/lib/role-routes'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { getRoleHomeRoute, isUserRole } from '@/lib/role-routes'
+export default async function RootPage() {
+  const profile = await getCurrentUserProfile()
 
-export default function RootPage() {
-  const router = useRouter()
+  if (!profile) {
+    redirect('/onboarding/role-select')
+  }
 
-  useEffect(() => {
-    const role = localStorage.getItem('habi_role')
-    router.replace(isUserRole(role) ? getRoleHomeRoute(role) : '/onboarding/role-select')
-  }, [router])
-
-  return null
+  redirect(getRoleHomeRoute(profile.role.toLowerCase() as AppRole))
 }

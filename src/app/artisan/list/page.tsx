@@ -1,7 +1,7 @@
+import { Role } from '@/generated/prisma/enums'
+import { requireRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { ListingsClient, type ListingRow } from './ListingsClient'
-
-const ARTISAN_ID = 'user-artisan-sitti'
 
 const MATERIAL_BG: Record<string, string> = {
   Plastic: 'from-[#A0B4C8] to-[#6080A0]',
@@ -12,14 +12,16 @@ const MATERIAL_BG: Record<string, string> = {
 const DEFAULT_BG = 'from-[#C0C8D0] to-[#808890]'
 
 export default async function MyListingsPage() {
+  const artisan = await requireRole(Role.ARTISAN)
+  const now = new Date().getTime()
   const [listings, activeRentals] = await Promise.all([
     prisma.listing.findMany({
-      where: { product: { artisanId: ARTISAN_ID } },
+      where: { product: { artisanId: artisan.id } },
       include: { product: true },
       orderBy: { createdAt: 'desc' },
     }),
     prisma.rental.findMany({
-      where: { listing: { product: { artisanId: ARTISAN_ID } }, returnedAt: null },
+      where: { listing: { product: { artisanId: artisan.id } }, returnedAt: null },
       orderBy: { endDate: 'asc' },
     }),
   ])
@@ -35,7 +37,7 @@ export default async function MyListingsPage() {
     const listingRentals = rentalsByListing.get(l.id) ?? []
     const nearestRental = listingRentals[0]
     const daysRemaining = nearestRental
-      ? Math.max(0, Math.ceil((nearestRental.endDate.getTime() - Date.now()) / 86_400_000))
+      ? Math.max(0, Math.ceil((nearestRental.endDate.getTime() - now) / 86_400_000))
       : null
 
     return {

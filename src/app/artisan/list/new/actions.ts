@@ -1,10 +1,10 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { Role } from '@/generated/prisma/enums'
+import { requireRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { ListingType, ListingStatus } from '@/generated/prisma/client'
-
-const ARTISAN_ID = 'user-artisan-sitti'
 
 export async function publishListing({
   name,
@@ -17,13 +17,14 @@ export async function publishListing({
   materialType: string
   listings: { type: string; price: number }[]
 }) {
+  const artisan = await requireRole(Role.ARTISAN)
   const product = await prisma.product.create({
     data: {
       name,
       description,
       materialType,
       images: [],
-      artisanId: ARTISAN_ID,
+      artisanId: artisan.id,
     },
   })
 

@@ -20,29 +20,29 @@ import { TopNav } from '@/components/artisan/TopNav'
 import { BottomNav } from '@/components/artisan/BottomNav'
 import { prisma } from '@/lib/prisma'
 import { ListingStatus, RefurbStatus, OrderStatus } from '@/generated/prisma/enums'
-
-// Temporary: hardcoded until auth is wired up
-const ARTISAN_ID = 'user-artisan-sitti'
+import { Role } from '@/generated/prisma/enums'
+import { requireRole } from '@/lib/auth'
 
 export default async function ArtisanDashboardPage() {
+  const artisan = await requireRole(Role.ARTISAN)
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
   const [user, activeListings, rentals, monthOrders, latestChain, topDemand] = await Promise.all([
-    prisma.user.findUnique({ where: { id: ARTISAN_ID } }),
+    prisma.user.findUnique({ where: { id: artisan.id } }),
 
     prisma.listing.count({
-      where: { product: { artisanId: ARTISAN_ID }, status: ListingStatus.AVAILABLE },
+      where: { product: { artisanId: artisan.id }, status: ListingStatus.AVAILABLE },
     }),
 
     prisma.rental.findMany({
-      where: { listing: { product: { artisanId: ARTISAN_ID } } },
+      where: { listing: { product: { artisanId: artisan.id } } },
       include: { listing: true },
     }),
 
     prisma.order.findMany({
       where: {
-        listing: { product: { artisanId: ARTISAN_ID } },
+        listing: { product: { artisanId: artisan.id } },
         status: { in: [OrderStatus.CONFIRMED, OrderStatus.SHIPPED, OrderStatus.DELIVERED] },
         createdAt: { gte: startOfMonth },
       },
@@ -50,7 +50,7 @@ export default async function ArtisanDashboardPage() {
     }),
 
     prisma.traceabilityChain.findFirst({
-      where: { artisanId: ARTISAN_ID },
+      where: { artisanId: artisan.id },
       include: {
         product: true,
         junkShop: { include: { materialsList: true } },

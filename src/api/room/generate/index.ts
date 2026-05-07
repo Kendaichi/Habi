@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Role } from '@/generated/prisma/enums'
+import { requireRole } from '@/lib/auth'
 import { createRoomGeneration, getRoomStatus } from '@/lib/room-service'
 import type { Handler } from '@/types/server'
 
 export const POST: Handler = async (req: NextRequest) => {
   try {
+    const buyer = await requireRole(Role.BUYER)
     const body = (await req.json()) as {
       presetId?: string
       imageUrl?: string
@@ -16,13 +19,16 @@ export const POST: Handler = async (req: NextRequest) => {
       return NextResponse.json({ error: 'presetId is required' }, { status: 400 })
     }
 
-    const result = await createRoomGeneration({
-      presetId: body.presetId as 'sunlit-sala' | 'heritage-den' | 'maker-loft',
-      imageUrl: body.imageUrl,
-      notes: body.notes,
-      simulateFailure: body.simulateFailure,
-      imageInsights: body.imageInsights,
-    })
+    const result = await createRoomGeneration(
+      {
+        presetId: body.presetId as 'sunlit-sala' | 'heritage-den' | 'maker-loft',
+        imageUrl: body.imageUrl,
+        notes: body.notes,
+        simulateFailure: body.simulateFailure,
+        imageInsights: body.imageInsights,
+      },
+      buyer.id,
+    )
 
     return NextResponse.json(result, { status: 200 })
   } catch (error) {

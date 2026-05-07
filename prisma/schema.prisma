@@ -161,10 +161,23 @@ model Room {
   @@index([userId])
 }
 
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model MaterialRequest {
+  id           String        @id
+  materialType String
+  quantityKg   Float
+  dateNeeded   DateTime
+  description  String?
+  photoUrl     String?
+  status       RequestStatus @default(PENDING)
+  createdAt    DateTime      @default(now())
+}
+
 enum Role {
   BUYER
   ARTISAN
   SUPPLIER
+  JUNKSHOP
 }
 
 enum Room3DGenerationStatus {

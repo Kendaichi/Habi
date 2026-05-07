@@ -1,7 +1,11 @@
 import { BuyerScreenShell } from '@/components/buyer/BuyerScreenShell'
 import { CheckoutClient } from '@/components/buyer/CheckoutClient'
+import { Role } from '@/generated/prisma/enums'
+import { requireRole } from '@/lib/auth'
 
-export default function BuyerCheckoutPage() {
+export default async function BuyerCheckoutPage() {
+  await requireRole(Role.BUYER)
+
   return (
     <BuyerScreenShell title="Checkout" eyebrow="Local payment" showBottomNav={false}>
       <div className="mb-6">

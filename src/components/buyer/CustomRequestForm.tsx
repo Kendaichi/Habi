@@ -11,6 +11,7 @@ export function CustomRequestForm() {
   const [selectedMaterials, setSelectedMaterials] = useState<string[]>(['Bamboo'])
   const [photoName, setPhotoName] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   function toggleMaterial(material: string) {
     setSelectedMaterials((current) =>
@@ -44,8 +45,27 @@ export function CustomRequestForm() {
   return (
     <form
       className="space-y-5"
-      onSubmit={(event) => {
+      onSubmit={async (event) => {
         event.preventDefault()
+        setError(null)
+        const form = new FormData(event.currentTarget)
+        const response = await fetch('/api/buyer/custom-request', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            budget,
+            materials: selectedMaterials,
+            photoName,
+            description: String(form.get('notes') ?? ''),
+          }),
+        })
+
+        if (!response.ok) {
+          const payload = (await response.json().catch(() => ({}))) as { error?: string }
+          setError(payload.error ?? 'Unable to submit this custom request.')
+          return
+        }
+
         setSubmitted(true)
       }}
     >
@@ -133,11 +153,18 @@ export function CustomRequestForm() {
         </label>
         <textarea
           id="notes"
+          name="notes"
           rows={5}
           className="mt-4 w-full rounded-lg border border-stone-200 bg-cream px-4 py-3 text-sm text-charcoal outline-none focus:border-forest"
           placeholder="Describe the piece, room dimensions, style, and any materials you want to avoid."
         />
       </section>
+
+      {error ? (
+        <p className="rounded-lg border border-terracotta/20 bg-terracotta/10 px-4 py-3 text-sm text-terracotta">
+          {error}
+        </p>
+      ) : null}
 
       <button
         type="submit"

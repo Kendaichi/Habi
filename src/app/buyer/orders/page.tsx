@@ -3,15 +3,17 @@ import { BuyerScreenShell } from '@/components/buyer/BuyerScreenShell'
 import { ImpactSummary } from '@/components/buyer/ImpactSummary'
 import { OrderCard } from '@/components/buyer/OrderCard'
 import { RentalTrackerCard } from '@/components/buyer/RentalTrackerCard'
+import { Role } from '@/generated/prisma/enums'
+import { requireRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-const BUYER_ID = 'user-buyer-juan'
 const rentalImage =
   'data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 360 300%22%3E%3Crect width=%22360%22 height=%22300%22 fill=%22%23faf6f0%22/%3E%3Crect x=%2260%22 y=%22102%22 width=%22240%22 height=%22122%22 rx=%2230%22 fill=%22%23c8553d%22 opacity=%22.2%22/%3E%3Cpath d=%22M92 118h176M88 160h184M96 202h168%22 stroke=%22%231b5e3f%22 stroke-width=%2214%22 stroke-linecap=%22round%22 opacity=%22.42%22/%3E%3C/svg%3E'
 
 export default async function BuyerOrdersPage() {
+  const buyer = await requireRole(Role.BUYER)
   const orders = await prisma.order.findMany({
-    where: { buyerId: BUYER_ID },
+    where: { buyerId: buyer.id },
     include: {
       listing: {
         include: {

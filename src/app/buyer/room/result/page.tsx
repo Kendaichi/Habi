@@ -4,10 +4,13 @@ import { BeforeAfterSlider } from '@/components/buyer/BeforeAfterSlider'
 import { BuyerBottomNav } from '@/components/buyer/BuyerBottomNav'
 import { ImpactSummary } from '@/components/buyer/ImpactSummary'
 import { RoomResultActions } from '@/components/buyer/RoomResultActions'
+import { Role } from '@/generated/prisma/enums'
+import { requireRole } from '@/lib/auth'
 import { getLatestCompletedRoomResult } from '@/lib/room-service'
 
 export default async function RoomResultPage() {
-  const result = await getLatestCompletedRoomResult()
+  const buyer = await requireRole(Role.BUYER)
+  const result = await getLatestCompletedRoomResult(buyer.id)
   const featured = result?.recommendations[0]
 
   if (!result) {

@@ -1,7 +1,11 @@
 import { BuyerScreenShell } from '@/components/buyer/BuyerScreenShell'
 import { CustomRequestForm } from '@/components/buyer/CustomRequestForm'
+import { Role } from '@/generated/prisma/enums'
+import { requireRole } from '@/lib/auth'
 
-export default function BuyerRequestPage() {
+export default async function BuyerRequestPage() {
+  await requireRole(Role.BUYER)
+
   return (
     <BuyerScreenShell title="Custom Request" eyebrow="Bespoke">
       <div className="mb-6">

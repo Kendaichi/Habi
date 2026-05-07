@@ -1,8 +1,9 @@
 "use client"
 
-import { createContext, useContext, useState, type ReactNode } from "react"
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
+import type { AppRole } from "@/lib/role-routes"
 
-export type UserRole = "buyer" | "artisan" | "supplier" | "junkshop"
+export type UserRole = AppRole
 
 interface RoleContextType {
   role: UserRole | null
@@ -15,10 +16,14 @@ const RoleContext = createContext<RoleContextType>({
 })
 
 export function RoleProvider({ children }: { children: ReactNode }) {
-  const [role, setRoleState] = useState<UserRole | null>(() => {
-    if (typeof window === "undefined") return null
-    return localStorage.getItem("habi_role") as UserRole | null
-  })
+  const [role, setRoleState] = useState<UserRole | null>(null)
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      const stored = localStorage.getItem("habi_role") as UserRole | null
+      if (stored) setRoleState(stored)
+    })
+  }, [])
 
   const setRole = (newRole: UserRole | null) => {
     if (newRole) {

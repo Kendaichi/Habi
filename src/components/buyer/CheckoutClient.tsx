@@ -31,7 +31,15 @@ export function CheckoutClient() {
   const shipping = items.length > 0 ? 180 : 0
   const total = totals.subtotal + shipping
 
-  function completeCheckout() {
+  async function handleCheckout() {
+    const response = await fetch('/api/buyer/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    })
+
+    if (!response.ok) return
+
     window.localStorage.setItem(
       'habi-last-checkout-v1',
       JSON.stringify({
@@ -108,7 +116,7 @@ export function CheckoutClient() {
 
       <button
         type="button"
-        onClick={completeCheckout}
+        onClick={handleCheckout}
         disabled={items.length === 0}
         className="w-full rounded-lg bg-terracotta px-5 py-4 text-base font-semibold text-cream shadow-[0_16px_36px_rgba(200,85,61,0.22)] disabled:opacity-50"
       >
