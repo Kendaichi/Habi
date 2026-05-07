@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Fraunces, DM_Sans, JetBrains_Mono } from "next/font/google"
 import "./globals.css"
 import { RoleProvider } from "@/context/RoleContext"
+import { CartProvider } from "@/context/CartContext"
 import QueryClientProviderWrapper from "@/providers/QueryClientProvider";
 import ToastProvider from "@/providers/ToastProvider";
 
@@ -41,7 +42,9 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <QueryClientProviderWrapper>
           <ToastProvider>
-            <RoleProvider>{children}</RoleProvider>
+            <CartProvider>
+              <RoleProvider>{children}</RoleProvider>
+            </CartProvider>
           </ToastProvider>
         </QueryClientProviderWrapper>
       </body>

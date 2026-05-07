@@ -62,3 +62,40 @@ export async function updateListing(
 
   redirect('/artisan/list')
 }
+
+export async function archiveListing(listingId: string) {
+  const existing = await prisma.listing.findUnique({
+    where: { id: listingId },
+    select: { productId: true },
+  })
+  if (!existing) return
+
+  await prisma.listing.updateMany({
+    where: { productId: existing.productId },
+    data: { status: ListingStatus.DRAFT },
+  })
+
+  redirect('/artisan/list')
+}
+
+export async function deleteListing(listingId: string) {
+  const existing = await prisma.listing.findUnique({
+    where: { id: listingId },
+    select: { productId: true },
+  })
+  if (!existing) return
+
+  const productId = existing.productId
+
+  const siblingIds = (
+    await prisma.listing.findMany({ where: { productId }, select: { id: true } })
+  ).map((l) => l.id)
+
+  await prisma.rental.deleteMany({ where: { listingId: { in: siblingIds } } })
+  await prisma.order.deleteMany({ where: { listingId: { in: siblingIds } } })
+  await prisma.listing.deleteMany({ where: { productId } })
+  await prisma.traceabilityChain.deleteMany({ where: { productId } })
+  await prisma.product.delete({ where: { id: productId } })
+
+  redirect('/artisan/list')
+}

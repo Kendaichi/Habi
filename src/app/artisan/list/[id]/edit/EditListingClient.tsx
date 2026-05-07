@@ -16,11 +16,13 @@ import {
   ShoppingBag,
   CalendarDays,
   History,
+  Archive,
+  Trash2,
 } from 'lucide-react'
 import { TopNav } from '@/components/artisan/TopNav'
 import { BottomNav } from '@/components/artisan/BottomNav'
 import { supabase } from '@/lib/supabase'
-import { updateListing } from './actions'
+import { updateListing, archiveListing, deleteListing } from './actions'
 import type { ListingType } from '@/generated/prisma/client'
 import type { LucideIcon } from 'lucide-react'
 
@@ -161,6 +163,8 @@ export function EditListingClient({
   const [description, setDescription] = useState(initDesc)
 
   const [isPending, startTransition] = useTransition()
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const totalImages = images.length + newFiles.length
   const allPreviews = [...images, ...newPreviews]
@@ -593,6 +597,69 @@ export function EditListingClient({
             )}
           </button>
         </div>
+
+        {/* Danger Zone */}
+        <section className="border-border space-y-4 rounded-2xl border border-dashed p-5">
+          <div>
+            <h2 className="text-charcoal text-sm font-bold">Danger Zone</h2>
+            <p className="text-stone mt-0.5 text-xs leading-relaxed">
+              These actions are permanent. Archive moves the listing back to draft; delete removes it entirely.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <button
+              onClick={() => startTransition(() => archiveListing(listingId))}
+              disabled={isPending}
+              className="border-border text-stone hover:border-mustard hover:text-mustard flex flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-semibold transition-colors disabled:opacity-40"
+            >
+              <Archive className="h-4 w-4" />
+              Move to Draft
+            </button>
+
+            {confirmDelete ? (
+              <div className="flex flex-1 items-center gap-2">
+                <button
+                  onClick={() => {
+                    setDeleteError(null)
+                    startTransition(async () => {
+                      try {
+                        await deleteListing(listingId)
+                      } catch (err) {
+                        setDeleteError(err instanceof Error ? err.message : 'Delete failed.')
+                        setConfirmDelete(false)
+                      }
+                    })
+                  }}
+                  disabled={isPending}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                >
+                  {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  Yes, Delete
+                </button>
+                <button
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={isPending}
+                  className="border-border text-stone flex flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-semibold transition-colors hover:text-charcoal disabled:opacity-40"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => { setDeleteError(null); setConfirmDelete(true) }}
+                className="text-red-600 border-red-200 hover:bg-red-50 flex flex-1 items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-semibold transition-colors"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Listing
+              </button>
+            )}
+          </div>
+
+          {deleteError && (
+            <p className="text-xs font-medium text-red-600">{deleteError}</p>
+          )}
+        </section>
       </div>
 
       <BottomNav />

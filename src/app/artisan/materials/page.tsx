@@ -1,13 +1,14 @@
 import { prisma } from '@/lib/prisma'
-import { MaterialsClient, type HubRow } from './MaterialsClient'
+import { MaterialsClient, type HubRow, type RequestRow } from './MaterialsClient'
 
 export default async function ArtisanMaterialsPage() {
-  const junkShops = await prisma.junkShop.findMany({
-    include: {
-      materialsList: { where: { available: true } },
-    },
-    orderBy: { name: 'asc' },
-  })
+  const [junkShops, materialRequests] = await Promise.all([
+    prisma.junkShop.findMany({
+      include: { materialsList: { where: { available: true } } },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.materialRequest.findMany({ orderBy: { createdAt: 'desc' } }),
+  ])
 
   const hubs: HubRow[] = junkShops.map((shop) => ({
     id: shop.id,
@@ -20,5 +21,15 @@ export default async function ArtisanMaterialsPage() {
     })),
   }))
 
-  return <MaterialsClient hubs={hubs} />
+  const requests: RequestRow[] = materialRequests.map((r) => ({
+    id: r.id,
+    materialType: r.materialType,
+    quantityKg: r.quantityKg,
+    dateNeeded: r.dateNeeded.toISOString().split('T')[0],
+    description: r.description,
+    photoUrl: r.photoUrl,
+    status: r.status,
+  }))
+
+  return <MaterialsClient hubs={hubs} requests={requests} />
 }

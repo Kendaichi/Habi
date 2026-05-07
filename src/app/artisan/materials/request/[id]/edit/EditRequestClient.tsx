@@ -1,11 +1,11 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { ArrowLeft, ChevronDown, Upload, Info, Send, Loader2 } from 'lucide-react'
+import { ArrowLeft, ChevronDown, Upload, Info, Check, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { BottomNav } from '@/components/artisan/BottomNav'
 import { supabase } from '@/lib/supabase'
-import { submitMaterialRequest } from './actions'
+import { updateMaterialRequest } from '../../actions'
 
 const BUCKET = 'material-requests'
 
@@ -19,32 +19,38 @@ const MATERIAL_TYPES = [
   { value: 'dyes', label: 'Natural Dyes & Pigments' },
 ]
 
-export default function RequestMaterialPage() {
+type RequestData = {
+  id: string
+  materialType: string
+  quantityKg: number
+  dateNeeded: string
+  description: string | null
+  photoUrl: string | null
+  status: string
+}
+
+export function EditRequestClient({ request }: { request: RequestData }) {
   const [form, setForm] = useState({
-    materialType: '',
-    quantity: '',
-    dateNeeded: '',
-    description: '',
+    materialType: request.materialType,
+    quantity: String(request.quantityKg),
+    dateNeeded: request.dateNeeded,
+    description: request.description ?? '',
   })
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
-  }
-
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    setFile(e.target.files?.[0] ?? null)
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setUploading(true)
 
-    let photoUrl: string | undefined
+    let photoUrl = request.photoUrl ?? undefined
 
     if (file) {
       const ext = file.name.split('.').pop() ?? 'jpg'
@@ -58,61 +64,30 @@ export default function RequestMaterialPage() {
 
     setUploading(false)
     startTransition(() =>
-      submitMaterialRequest({
+      updateMaterialRequest(request.id, {
         materialType: form.materialType,
         quantityKg: parseFloat(form.quantity),
         dateNeeded: form.dateNeeded,
         description: form.description,
         photoUrl,
-      })
+      }),
     )
   }
 
   return (
     <div className="bg-cream min-h-screen pb-28">
-      {/* Header */}
       <header className="border-border bg-cream/90 sticky top-0 z-40 flex h-14 items-center justify-between border-b px-5 backdrop-blur-sm">
-        <Link href="/artisan/materials" className="text-forest hover:bg-forest/10 rounded-full p-2">
+        <Link
+          href="/artisan/materials"
+          className="text-forest hover:bg-forest/10 rounded-full p-2"
+        >
           <ArrowLeft className="h-5 w-5" />
         </Link>
-        <span className="font-heading text-forest text-base font-bold">Request Material</span>
+        <span className="font-heading text-forest text-base font-bold">Edit Request</span>
         <div className="w-9" />
       </header>
 
       <div className="px-5 pt-6">
-        {/* Hero text */}
-        <section className="mb-8">
-          <h1 className="font-heading text-forest mb-2 text-3xl leading-tight font-bold">
-            Can&apos;t find a material?
-          </h1>
-          <p className="text-stone text-sm leading-relaxed">
-            Our weaving hubs across the islands are rich with undocumented surplus and rare natural
-            fibers. If your specific workshop needs something unique, we&apos;re here to bridge the
-            gap.
-          </p>
-        </section>
-
-        {/* Inspiration image */}
-        <div className="relative mb-8 aspect-4/3 overflow-hidden rounded-3xl shadow-xl">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoH4q4QR2wJuDZNIHlBrFtN0MQL_F8FhbfZ3oyMVkNwQDOob9vc-oaDu3Hg8hdrfI85IPEIr8SWBfIlaKBPakmxleGk-OzRGPkuC7T4gHIllEImLLUODU805CJGuO5Avxzdcm7eylnHjths-hjQ_UTmJ1ONHmkj9S9u0mAFimi-rjfUNl7go08lSCGPPV9fD76w5uWZCTBKhYe-NyUvnVoT0cwlbwwvZ2H_SsljOGKtcGexGw4q49KjWHZvbKDobnW9Wkrl7snm6QF"
-            alt="Raw material inspiration"
-            className="h-full w-full object-cover"
-          />
-          <div className="from-forest/40 absolute inset-0 bg-linear-to-t to-transparent" />
-          <div className="absolute bottom-6 left-6 text-white">
-            <span className="mb-2 inline-block rounded-full bg-white/20 px-3 py-1 text-[10px] font-bold tracking-widest uppercase backdrop-blur-md">
-              Sourcing Tip
-            </span>
-            <h3 className="font-heading text-base font-bold">Natural Pigments</h3>
-            <p className="text-xs text-white/90">
-              Ask for wild indigo or mahogany bark for traditional dyeing.
-            </p>
-          </div>
-        </div>
-
-        {/* Form */}
         <form
           onSubmit={handleSubmit}
           className="border-border space-y-6 rounded-3xl border bg-white p-6 shadow-sm"
@@ -154,7 +129,6 @@ export default function RequestMaterialPage() {
                 name="quantity"
                 value={form.quantity}
                 onChange={handleChange}
-                placeholder="e.g. 5.0"
                 step="0.1"
                 min="0"
                 required
@@ -185,7 +159,6 @@ export default function RequestMaterialPage() {
               name="description"
               value={form.description}
               onChange={handleChange}
-              placeholder="How will this material be woven or utilized?"
               rows={4}
               className="border-border bg-muted text-charcoal focus:border-forest focus:ring-forest/20 w-full resize-none rounded-xl border px-4 py-3.5 text-sm focus:ring-2 focus:outline-none"
             />
@@ -196,26 +169,36 @@ export default function RequestMaterialPage() {
             <label className="text-stone mb-2 block text-xs font-bold tracking-wider uppercase">
               Reference Photo
             </label>
-            <label className="border-border bg-muted/50 hover:border-forest/40 hover:bg-muted flex h-36 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed transition-colors">
-              <Upload className="text-stone h-7 w-7" />
+            {request.photoUrl && !file && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={request.photoUrl}
+                alt="Current reference"
+                className="mb-3 h-28 w-full rounded-2xl object-cover"
+              />
+            )}
+            <label className="border-border bg-muted/50 hover:border-forest/40 hover:bg-muted flex h-28 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed transition-colors">
+              <Upload className="text-stone h-6 w-6" />
               <p className="text-stone text-xs font-semibold">
-                {file?.name ?? 'Tap to upload texture reference'}
+                {file?.name ?? (request.photoUrl ? 'Replace photo' : 'Tap to upload')}
               </p>
-              <p className="text-stone/70 text-[10px]">PNG, JPG up to 10MB</p>
-              <input type="file" className="hidden" accept="image/*" onChange={handleFile} />
+              <input
+                type="file"
+                className="hidden"
+                accept="image/*"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
             </label>
           </div>
 
-          {/* Info banner */}
+          {/* Info */}
           <div className="bg-mustard/10 flex items-start gap-3 rounded-2xl p-4">
             <Info className="text-mustard mt-0.5 h-4 w-4 shrink-0" />
             <p className="text-charcoal text-xs leading-relaxed">
-              We&apos;ll broadcast your request to all nearby Hubs and notify you when a match is
-              found.
+              Changes will be broadcast to all nearby Hubs.
             </p>
           </div>
 
-          {/* Submit */}
           <button
             type="submit"
             disabled={uploading || isPending}
@@ -227,11 +210,11 @@ export default function RequestMaterialPage() {
                 Uploading…
               </>
             ) : isPending ? (
-              'Sending…'
+              'Saving…'
             ) : (
               <>
-                Broadcast Request
-                <Send className="h-4 w-4" />
+                Save Changes
+                <Check className="h-4 w-4" />
               </>
             )}
           </button>
