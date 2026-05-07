@@ -63,8 +63,10 @@ export default async function RoomResultPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-stone text-xs font-semibold uppercase tracking-[0.22em]">
-                  {result.generationProvider?.startsWith('3d-ai-studio') && result.worldAssetUrl
-                    ? '3D AI Studio world'
+                  {result.worldKind === 'reconstructed'
+                    ? 'Reconstructed from your room photo'
+                    : result.generationProvider?.startsWith('3d-ai-studio') && result.worldAssetUrl
+                      ? '3D AI Studio world'
                     : result.worldKind === 'composed'
                       ? 'Generated room world'
                       : 'Generated room world'}
@@ -79,11 +81,20 @@ export default async function RoomResultPage() {
             <div className="flex flex-wrap gap-2">
               <span className="rounded-full bg-charcoal/6 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-charcoal">
                 {result.generationProvider?.startsWith('3d-ai-studio') && result.worldAssetUrl
-                  ? '3D AI Studio World'
-                  : result.worldKind === 'composed'
+                  ? result.scene.reconstructionSource === 'provider-candidate'
+                    ? 'Validated Provider Mesh'
+                    : 'Reconstructed Room'
+                  : result.worldKind === 'reconstructed'
+                    ? 'Geometry-First Mesh'
+                    : result.worldKind === 'composed'
                     ? 'Composed World'
                     : 'Generated World'}
               </span>
+              {result.qualityScore != null ? (
+                <span className="rounded-full bg-forest/8 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-forest">
+                  {Math.round(result.qualityScore * 100)}% structure confidence
+                </span>
+              ) : null}
               {result.worldAssetUrl ? (
                 <span className="rounded-full bg-terracotta/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-terracotta">
                   {result.worldAssetFormat?.toUpperCase() ?? 'WORLD'} ready
@@ -107,7 +118,7 @@ export default async function RoomResultPage() {
               <div className="rounded-2xl border border-mustard/30 bg-mustard/10 px-4 py-3">
                 <p className="text-charcoal text-sm font-semibold">Generation notes</p>
                 <p className="text-stone mt-1 text-sm leading-relaxed">
-                  {result.generationWarnings[0]}
+                  {result.reconstructionWarnings[0] ?? result.generationWarnings[0]}
                 </p>
               </div>
             ) : null}
@@ -115,7 +126,7 @@ export default async function RoomResultPage() {
               href={`/buyer/room/world/${result.roomId}`}
               className="bg-terracotta text-cream inline-flex items-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold"
             >
-              Enter generated world
+              Enter reconstructed world
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

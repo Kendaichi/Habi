@@ -2,6 +2,7 @@ import { Prisma, Room3DGenerationStatus } from '@/generated/prisma/client'
 import { ListingType } from '@/generated/prisma/enums'
 import { composeRoomWorld } from '@/lib/room-world-composer'
 import { analyzeRoomImage } from '@/lib/room-vision-client'
+import { getRoomStructuralAnalysis } from '@/lib/room-vision-provider'
 import {
   getThreeDAIJobResult,
   getThreeDAIJobStatus,
@@ -25,6 +26,7 @@ import type {
   RoomSceneData,
   RoomSceneHotspot,
   RoomStatusResponse,
+  RoomStructuralAnalysis,
   RoomVisualizerPayload,
   RoomWorldPayload,
   RoomWorldKind,
@@ -37,7 +39,7 @@ const MOCK_PROVIDER = 'mock-fallback'
 const COMPOSED_PROVIDER = 'app-composed-world-v1'
 
 const mockRoomStore = new Map<string, MockRoomRecord>()
-let latestMockRoomId: string | null = null
+const latestMockRoomId: string | null = null
 
 type ListingRecord = Prisma.ListingGetPayload<{
   include: {
@@ -66,6 +68,10 @@ type ScanAnalysis = {
   lighting: string
   simulateFailure?: boolean
   imageInsights?: RoomImageInsights
+  sourceViews?: string[]
+  structuralAnalysis?: RoomStructuralAnalysis
+  qualityScore?: number
+  reconstructionWarnings?: string[]
 }
 
 type MockRoomRecord = {
@@ -82,6 +88,8 @@ type MockRoomRecord = {
   sceneAnchors: RoomSceneAnchor[]
   placedItems: RoomPlacedItem[]
   generationWarnings: string[]
+  reconstructionWarnings: string[]
+  qualityScore?: number | null
   worldKind: RoomWorldKind
   scene: RoomSceneData
   generationProvider: string
@@ -377,6 +385,17 @@ function parseAnalysis(value: Prisma.JsonValue | null): ScanAnalysis {
       json.imageInsights && typeof json.imageInsights === 'object' && !Array.isArray(json.imageInsights)
         ? (json.imageInsights as unknown as RoomImageInsights)
         : undefined,
+    sourceViews: Array.isArray(json.sourceViews)
+      ? json.sourceViews.filter((value): value is string => typeof value === 'string')
+      : undefined,
+    structuralAnalysis:
+      json.structuralAnalysis && typeof json.structuralAnalysis === 'object' && !Array.isArray(json.structuralAnalysis)
+        ? (json.structuralAnalysis as unknown as RoomStructuralAnalysis)
+        : undefined,
+    qualityScore: typeof json.qualityScore === 'number' ? json.qualityScore : undefined,
+    reconstructionWarnings: Array.isArray(json.reconstructionWarnings)
+      ? json.reconstructionWarnings.filter((value): value is string => typeof value === 'string')
+      : undefined,
   }
 }
 
@@ -388,7 +407,17 @@ function getSceneData(room: RoomRecord): RoomSceneData | null {
   if (!room.sceneData || typeof room.sceneData !== 'object' || Array.isArray(room.sceneData)) {
     return null
   }
-  return room.sceneData as unknown as RoomSceneData
+  const scene = room.sceneData as unknown as RoomSceneData
+  return {
+    ...scene,
+    worldKind: scene.worldKind ?? 'composed',
+    anchors: scene.anchors ?? scene.analysis?.anchors ?? [],
+    placedItems: scene.placedItems ?? [],
+    generationWarnings: scene.generationWarnings ?? scene.analysis?.warnings ?? [],
+    reconstructionWarnings: scene.reconstructionWarnings ?? scene.generationWarnings ?? [],
+    qualityScore: scene.qualityScore ?? scene.structuralAnalysis?.qualityScore,
+    hotspots: scene.hotspots ?? [],
+  }
 }
 
 function getGeneratedPreview(room: RoomRecord): string {
@@ -401,8 +430,12 @@ function toInputJsonValue(value: unknown): Prisma.InputJsonValue {
 
 async function buildComposedScene(
   roomId: string,
-  input: Pick<RoomGenerateRequest, 'presetId' | 'imageUrl' | 'notes' | 'imageInsights'>,
+  input: Pick<RoomGenerateRequest, 'presetId' | 'imageUrl' | 'sourceViews' | 'notes' | 'imageInsights'>,
   recommendations: RoomRecommendation[],
+  options: {
+    analysis?: RoomAnalysis
+    structuralAnalysis?: RoomStructuralAnalysis
+  } = {},
 ): Promise<{
   roomTheme: string
   scene: RoomSceneData
@@ -410,8 +443,25 @@ async function buildComposedScene(
   worldAssetUrl: string
   worldAssetFormat: WorldAssetFormat
 }> {
-  const analysis = await analyzeRoomImage(input)
-  const composed = composeRoomWorld({ presetId: input.presetId }, analysis, recommendations)
+  const analysis = options.analysis ?? (await analyzeRoomImage(input))
+  const structuralAnalysis =
+    options.structuralAnalysis ??
+    (input.imageUrl
+      ? await getRoomStructuralAnalysis({
+          imageUrl: input.imageUrl,
+          sourceViews: Array.from(new Set([input.imageUrl, ...(input.sourceViews ?? [])])),
+          presetId: input.presetId,
+          notes: input.notes,
+          imageInsights: input.imageInsights,
+          analysis,
+        })
+      : undefined)
+  const composed = composeRoomWorld(
+    { presetId: input.presetId, imageUrl: input.imageUrl, sourceViews: input.sourceViews },
+    analysis,
+    recommendations,
+    structuralAnalysis,
+  )
   return {
     roomTheme: composed.roomTheme,
     scene: {
@@ -452,10 +502,15 @@ async function hydrateResult(room: RoomRecord): Promise<RoomResultPayload> {
         {
           presetId: scanAnalysis.presetId as RoomGenerateRequest['presetId'],
           imageUrl: room.scan.imageUrl,
+          sourceViews: scanAnalysis.sourceViews,
           notes: scanAnalysis.notes,
           imageInsights: scanAnalysis.imageInsights,
         },
         normalizedRecommendations,
+        {
+          analysis: analysisForRanking,
+          structuralAnalysis: scanAnalysis.structuralAnalysis,
+        },
       )
     ).scene
 
@@ -485,14 +540,19 @@ async function hydrateResult(room: RoomRecord): Promise<RoomResultPayload> {
     worldKind: scene.worldKind,
     worldPreviewImageUrl: room.previewImageUrl ?? room.imageUrl,
     roomAnalysis: scene.analysis,
+    structuralAnalysis: scene.structuralAnalysis,
     sceneAnchors: scene.anchors,
     placedItems: scene.placedItems,
     generationWarnings: scene.generationWarnings,
+    reconstructionWarnings: scene.reconstructionWarnings,
+    qualityScore: scene.qualityScore ?? null,
     insight:
-      room.generationProvider?.startsWith('3d-ai-studio') && room.worldAssetUrl
-        ? `3D AI Studio generated the room world from your upload, while Habi matched artisan pieces to the room's ${scene.analysis.lighting} light and available placement zones.`
-        : scene.worldKind === 'composed'
-        ? `Habi reconstructed a colored room world from your upload and auto-organized artisan pieces around the room's ${scene.analysis.lighting} light and visible free space.`
+      scene.worldKind === 'reconstructed'
+        ? `Habi reconstructed your uploaded room first, preserved large existing furniture as blockers, and placed artisan pieces only in detected empty zones.`
+        : room.generationProvider?.startsWith('3d-ai-studio') && room.worldAssetUrl
+          ? `3D AI Studio generated the room world from your upload, while Habi matched artisan pieces to the room's ${scene.analysis.lighting} light and available placement zones.`
+          : scene.worldKind === 'composed'
+            ? `Habi reconstructed a colored room world from your upload and auto-organized artisan pieces around the room's ${scene.analysis.lighting} light and visible free space.`
         : room.generationProvider?.startsWith('3d-ai-studio')
           ? `3D AI Studio is generating the room world while Habi keeps your artisan recommendations aligned to the room.`
           : `AI matched ${room.roomTheme.toLowerCase()} styling with locally crafted pieces that fit the room's ${scanAnalysis.lighting} lighting profile.`,
@@ -535,22 +595,49 @@ async function persistThreeDAIRoomStatus(
   })
 }
 
+function appendSceneWarning(scene: RoomSceneData, warning: string): RoomSceneData {
+  return {
+    ...scene,
+    generationWarnings: Array.from(new Set([...(scene.generationWarnings ?? []), warning])),
+    reconstructionWarnings: Array.from(new Set([...(scene.reconstructionWarnings ?? []), warning])),
+  }
+}
+
+function scoreProviderCandidate(scene: RoomSceneData): number {
+  const structural = scene.structuralAnalysis
+  const viewBoost = Math.min(0.18, ((scene.sourceViews?.length ?? 1) - 1) * 0.09)
+  const lowConfidenceOpportunity = Math.max(0, 0.66 - (scene.qualityScore ?? structural?.qualityScore ?? 0.55))
+  const objectPreservationPenalty = Math.min(0.18, (structural?.preservedObjects.length ?? 0) * 0.045)
+  return Number((0.5 + viewBoost + lowConfidenceOpportunity - objectPreservationPenalty).toFixed(2))
+}
+
+function providerCandidatePasses(scene: RoomSceneData): boolean {
+  const deterministicScore = scene.qualityScore ?? scene.structuralAnalysis?.qualityScore ?? 0.55
+  const providerScore = scoreProviderCandidate(scene)
+  return providerScore >= 0.72 && providerScore > deterministicScore + 0.08
+}
+
 async function reconcileThreeDAIRoom(room: RoomRecord): Promise<RoomRecord> {
   if (!room.externalJobId) return room
   const currentScene = getSceneData(room)
-  const isPrimaryProviderWorld = currentScene?.worldKind === 'composed'
-  const completionWarning = isPrimaryProviderWorld
-    ? null
-    : '3D AI Studio supplied a helper shell because the primary composed world degraded.'
-  const failureWarning = isPrimaryProviderWorld
-    ? null
-    : '3D AI Studio helper generation failed after the primary composed world degraded.'
+  const hasDeterministicWorld = currentScene?.worldKind === 'reconstructed' && Boolean(room.worldAssetUrl)
 
   if (!hasThreeDAIService()) {
     return prisma.room.update({
       where: { id: room.id },
       data: {
-        generationStatus: Room3DGenerationStatus.FAILED,
+        generationStatus: hasDeterministicWorld
+          ? Room3DGenerationStatus.COMPLETED
+          : Room3DGenerationStatus.FAILED,
+        sceneData:
+          currentScene && hasDeterministicWorld
+            ? toInputJsonValue(
+                appendSceneWarning(
+                  currentScene,
+                  'Optional provider candidate skipped because THREEDAI_API_KEY is not configured.',
+                ),
+              )
+            : undefined,
         providerStatus: 'FAILED',
         providerError: 'THREEDAI_API_KEY is not configured on this environment.',
       },
@@ -569,7 +656,18 @@ async function reconcileThreeDAIRoom(room: RoomRecord): Promise<RoomRecord> {
       return prisma.room.update({
         where: { id: room.id },
         data: {
-          generationStatus: Room3DGenerationStatus.FAILED,
+          generationStatus: hasDeterministicWorld
+            ? Room3DGenerationStatus.COMPLETED
+            : Room3DGenerationStatus.FAILED,
+          sceneData:
+            currentScene && hasDeterministicWorld
+              ? toInputJsonValue(
+                  appendSceneWarning(
+                    currentScene,
+                    'Optional provider candidate failed; Habi kept the deterministic room reconstruction.',
+                  ),
+                )
+              : undefined,
           providerStatus: status.status,
           providerError: status.errorMessage ?? '3D AI Studio generation failed.',
           providerPayload: status.raw ? toInputJsonValue(status.raw) : Prisma.JsonNull,
@@ -583,7 +681,50 @@ async function reconcileThreeDAIRoom(room: RoomRecord): Promise<RoomRecord> {
 
     // Asset URL not yet available on R2 — stay PROCESSING so the next poll retries
     if (!result.worldAssetUrl) {
+      if (currentScene && hasDeterministicWorld) {
+        return prisma.room.update({
+          where: { id: room.id },
+          data: {
+            generationStatus: Room3DGenerationStatus.COMPLETED,
+            sceneData: toInputJsonValue(
+              appendSceneWarning(
+                currentScene,
+                'Provider candidate completed without a world asset; Habi kept the deterministic room reconstruction.',
+              ),
+            ),
+            providerStatus: 'COMPLETED',
+            providerError: '3D AI Studio completed without returning a world asset.',
+            providerPayload: result.raw ? toInputJsonValue(result.raw) : Prisma.JsonNull,
+          },
+          include: { scan: true },
+        })
+      }
       return persistThreeDAIRoomStatus(room, { status: 'PROCESSING', raw: result.raw })
+    }
+
+    if (currentScene && hasDeterministicWorld && !providerCandidatePasses(currentScene)) {
+      return prisma.room.update({
+        where: { id: room.id },
+        data: {
+          generationStatus: Room3DGenerationStatus.COMPLETED,
+          sceneData: toInputJsonValue(
+            appendSceneWarning(
+              currentScene,
+              'Provider candidate was rejected because deterministic reconstruction better preserves the uploaded room structure.',
+            ),
+          ),
+          providerStatus: 'COMPLETED',
+          providerError: null,
+          providerPayload: result.raw
+            ? toInputJsonValue({
+                result: result.raw,
+                candidateScore: scoreProviderCandidate(currentScene),
+                selectedWorld: 'deterministic',
+              })
+            : Prisma.JsonNull,
+        },
+        include: { scan: true },
+      })
     }
 
     return prisma.room.update({
@@ -594,10 +735,15 @@ async function reconcileThreeDAIRoom(room: RoomRecord): Promise<RoomRecord> {
           currentScene
             ? toInputJsonValue({
                 ...currentScene,
-                worldKind: isPrimaryProviderWorld ? 'composed' : 'helper',
-                generationWarnings: completionWarning
-                  ? Array.from(new Set([...currentScene.generationWarnings, completionWarning]))
-                  : currentScene.generationWarnings,
+                worldKind: 'reconstructed',
+                reconstructionSource: 'provider-candidate',
+                qualityScore: Math.max(currentScene.qualityScore ?? 0, scoreProviderCandidate(currentScene)),
+                generationWarnings: Array.from(
+                  new Set([
+                    ...currentScene.generationWarnings,
+                    'Provider candidate passed validation and replaced the deterministic mesh.',
+                  ]),
+                ),
               })
             : undefined,
         providerStatus: 'COMPLETED',
@@ -615,16 +761,17 @@ async function reconcileThreeDAIRoom(room: RoomRecord): Promise<RoomRecord> {
     return prisma.room.update({
       where: { id: room.id },
       data: {
-        generationStatus: Room3DGenerationStatus.FAILED,
+        generationStatus: hasDeterministicWorld
+          ? Room3DGenerationStatus.COMPLETED
+          : Room3DGenerationStatus.FAILED,
         sceneData:
-          currentScene
-            ? toInputJsonValue({
-                ...currentScene,
-                worldKind: isPrimaryProviderWorld ? 'composed' : 'helper',
-                generationWarnings: failureWarning
-                  ? Array.from(new Set([...currentScene.generationWarnings, failureWarning]))
-                  : currentScene.generationWarnings,
-              })
+          currentScene && hasDeterministicWorld
+            ? toInputJsonValue(
+                appendSceneWarning(
+                  currentScene,
+                  'Optional provider candidate could not be validated; Habi kept the deterministic room reconstruction.',
+                ),
+              )
             : undefined,
         providerStatus: 'FAILED',
         providerError: message,
@@ -665,6 +812,8 @@ function makeMockStatus(room: MockRoomRecord): RoomStatusResponse {
       worldAssetFormat: room.worldAssetFormat,
       worldKind: room.worldKind,
       generationWarnings: room.generationWarnings,
+      reconstructionWarnings: room.reconstructionWarnings,
+      qualityScore: room.qualityScore ?? null,
       progressLabel: 'We hit a snag while mapping your space.',
       errorMessage: 'Offline preview could not finish this room. Try again with a new capture.',
     }
@@ -682,7 +831,9 @@ function makeMockStatus(room: MockRoomRecord): RoomStatusResponse {
       worldAssetFormat: room.worldAssetFormat,
       worldKind: room.worldKind,
       generationWarnings: room.generationWarnings,
-      progressLabel: 'Your AI room is ready.',
+      reconstructionWarnings: room.reconstructionWarnings,
+      qualityScore: room.qualityScore ?? null,
+      progressLabel: 'Your reconstructed room is ready.',
       redirectTo: '/buyer/room/result',
     }
   }
@@ -698,6 +849,8 @@ function makeMockStatus(room: MockRoomRecord): RoomStatusResponse {
     worldAssetFormat: room.worldAssetFormat,
     worldKind: room.worldKind,
     generationWarnings: room.generationWarnings,
+    reconstructionWarnings: room.reconstructionWarnings,
+    qualityScore: room.qualityScore ?? null,
     progressLabel: 'Running offline preview while the database reconnects.',
   }
 }
@@ -714,9 +867,12 @@ function hydrateMockResult(room: MockRoomRecord): RoomResultPayload {
     worldKind: room.worldKind,
     worldPreviewImageUrl: room.generatedImageUrl,
     roomAnalysis: room.roomAnalysis,
+    structuralAnalysis: room.scene.structuralAnalysis,
     sceneAnchors: room.sceneAnchors,
     placedItems: room.placedItems,
     generationWarnings: room.generationWarnings,
+    reconstructionWarnings: room.reconstructionWarnings,
+    qualityScore: room.qualityScore ?? null,
     insight: `Offline preview matched ${room.roomTheme.toLowerCase()} styling while your live database connection is unavailable.`,
     recommendations: room.recommendations,
     scene: room.scene,
@@ -733,22 +889,30 @@ export async function createRoomGeneration(
   if (!hasRealPhoto) {
     throw new Error('A real room photo is required for 3D world generation.')
   }
-  if (!hasThreeDAIService()) {
-    throw new Error('THREEDAI_API_KEY is required for 3D world generation.')
-  }
-  const useThreeDAIPrimary = true
-  const sourceImageUrl = input.imageUrl
+  const sourceImageUrl = input.imageUrl!
+  const sourceViews = [sourceImageUrl, ...(input.sourceViews ?? [])].filter(
+    (value, index, array) => Boolean(value) && array.indexOf(value) === index,
+  )
   const analysis = await analyzeRoomImage({
     presetId: input.presetId,
     imageUrl: sourceImageUrl,
     notes: input.notes,
     imageInsights: input.imageInsights,
   })
+  const structuralAnalysis = await getRoomStructuralAnalysis({
+    imageUrl: sourceImageUrl,
+    sourceViews,
+    presetId: input.presetId,
+    notes: input.notes,
+    imageInsights: input.imageInsights,
+    analysis,
+  })
   const recommendations = await getRankedRecommendations(preset.id, analysis)
 
   let composed = null as Awaited<ReturnType<typeof buildComposedScene>> | null
-  let generationProvider = useThreeDAIPrimary ? getThreeDAIProviderName() : COMPOSED_PROVIDER
-  let providerStatus: string = useThreeDAIPrimary ? 'PENDING' : 'COMPLETED'
+  const useThreeDAICandidate = hasThreeDAIService()
+  const generationProvider = useThreeDAICandidate ? getThreeDAIProviderName() : COMPOSED_PROVIDER
+  let providerStatus: string = useThreeDAICandidate ? 'PENDING' : 'COMPLETED'
   let providerError: string | null = null
   let worldAssetUrl: string | null = null
   let worldAssetFormat: WorldAssetFormat | null = null
@@ -759,70 +923,60 @@ export async function createRoomGeneration(
     preset.accent,
     [],
   )
-  let generationStatus: Room3DGenerationStatus = useThreeDAIPrimary
+  let generationStatus: Room3DGenerationStatus = useThreeDAICandidate
     ? Room3DGenerationStatus.PROCESSING
     : Room3DGenerationStatus.COMPLETED
   let scene: RoomSceneData = {
     title: `${preset.name} Planned World`,
     theme: preset.roomTheme,
-    worldKind: 'composed',
+    worldKind: 'reconstructed',
     palette: analysis.palette,
     analysis,
+    structuralAnalysis,
     anchors: analysis.anchors,
     placedItems: [],
     generationWarnings: [],
+    reconstructionWarnings: structuralAnalysis.warnings,
+    qualityScore: structuralAnalysis.qualityScore,
+    reconstructionSource: structuralAnalysis.source === 'vision-provider' ? 'deterministic' : 'heuristic',
+    sourceViews,
     hotspots: [],
   }
   let roomTheme = preset.roomTheme
 
-  if (useThreeDAIPrimary) {
-    try {
-      composed = await buildComposedScene(
-        roomId,
-        {
-          presetId: input.presetId,
-          imageUrl: sourceImageUrl,
-          notes: input.notes,
-          imageInsights: input.imageInsights,
-        },
-        recommendations,
-      )
-      roomTheme = composed.roomTheme
-      previewImageUrl = composed.previewImageUrl
-      scene = {
-        ...composed.scene,
-        worldKind: 'composed',
-        generationWarnings: composed.scene.generationWarnings.filter(
-          (warning) => !warning.toLowerCase().includes('fallback'),
-        ),
-      }
-    } catch (error) {
-      providerError =
-        error instanceof Error
-          ? `${error.message}. Using a lightweight planning preview while 3D AI Studio generates the room world.`
-          : 'Using a lightweight planning preview while 3D AI Studio generates the room world.'
-      previewImageUrl = buildRoomArtwork(preset.roomTheme, preset.wall, preset.floor, preset.accent, [])
-      scene = {
-        title: `${preset.name} Planned World`,
-        theme: preset.roomTheme,
-        worldKind: 'composed',
-        palette: analysis.palette,
-        analysis: {
-          ...analysis,
-          warnings: [
-            ...analysis.warnings,
-            'Habi is using a simplified planning overlay while 3D AI Studio generates the final room world.',
-          ],
-        },
-        anchors: analysis.anchors,
-        placedItems: [],
-        generationWarnings: [
-          ...analysis.warnings,
-          'Habi is using a simplified planning overlay while 3D AI Studio generates the final room world.',
-        ],
-        hotspots: [],
-      }
+  try {
+    composed = await buildComposedScene(
+      roomId,
+      {
+        presetId: input.presetId,
+        imageUrl: sourceImageUrl,
+        sourceViews,
+        notes: input.notes,
+        imageInsights: input.imageInsights,
+      },
+      recommendations,
+      { analysis, structuralAnalysis },
+    )
+    roomTheme = composed.roomTheme
+    previewImageUrl = composed.previewImageUrl
+    worldAssetUrl = composed.worldAssetUrl
+    worldAssetFormat = composed.worldAssetFormat
+    scene = {
+      ...composed.scene,
+      worldKind: 'reconstructed',
+      generationWarnings: composed.scene.generationWarnings.filter(
+        (warning) => !warning.toLowerCase().includes('fallback'),
+      ),
     }
+  } catch (error) {
+    providerError =
+      error instanceof Error
+        ? `${error.message}. Habi could not build the deterministic reconstruction.`
+        : 'Habi could not build the deterministic reconstruction.'
+    generationStatus = Room3DGenerationStatus.FAILED
+    providerStatus = 'FAILED'
+    previewImageUrl = buildRoomArtwork(preset.roomTheme, preset.wall, preset.floor, preset.accent, [])
+    scene = appendSceneWarning(scene, 'Deterministic room reconstruction failed before provider submission.')
   }
 
   try {
@@ -851,8 +1005,12 @@ export async function createRoomGeneration(
               lighting: analysis.lighting,
               simulateFailure: input.simulateFailure ?? false,
               imageInsights: input.imageInsights,
+              sourceViews,
               roomAnalysis: analysis,
+              structuralAnalysis,
+              qualityScore: structuralAnalysis.qualityScore,
               generationWarnings: scene.generationWarnings,
+              reconstructionWarnings: scene.reconstructionWarnings,
             } satisfies Prisma.InputJsonValue,
           },
         },
@@ -860,19 +1018,15 @@ export async function createRoomGeneration(
       include: { scan: true },
     })
 
-    if (createdRoom.generationStatus === Room3DGenerationStatus.PROCESSING && useThreeDAIPrimary) {
+    if (createdRoom.generationStatus === Room3DGenerationStatus.PROCESSING && useThreeDAICandidate) {
       try {
         const submitted = await submitThreeDAIRoomJob({
           roomId,
-          imageUrl: sourceImageUrl!,
+          imageUrl: sourceImageUrl,
+          sourceViews: sourceViews.slice(1),
           roomTheme,
           presetId: preset.id,
           notes: input.notes,
-          recommendations: recommendations.map((recommendation) => ({
-            productName: recommendation.productName,
-            materialType: recommendation.materialType,
-            reasonTags: recommendation.reasonTags,
-          })),
         })
 
         await prisma.room.update({
@@ -890,6 +1044,9 @@ export async function createRoomGeneration(
           where: { id: createdRoom.id },
           data: {
             generationStatus: Room3DGenerationStatus.FAILED,
+            ...(worldAssetUrl
+              ? { generationStatus: Room3DGenerationStatus.COMPLETED }
+              : {}),
             generationProvider: getThreeDAIProviderName(),
             providerStatus: 'FAILED',
             providerError:
@@ -901,7 +1058,13 @@ export async function createRoomGeneration(
               generationWarnings: Array.from(
                 new Set([
                   ...scene.generationWarnings,
-                  '3D AI Studio could not start the room generation.',
+                  'Optional provider candidate could not start; Habi kept the deterministic reconstruction.',
+                ]),
+              ),
+              reconstructionWarnings: Array.from(
+                new Set([
+                  ...scene.reconstructionWarnings,
+                  'Optional provider candidate could not start; Habi kept the deterministic reconstruction.',
                 ]),
               ),
             }),
@@ -955,6 +1118,8 @@ export async function getRoomStatus(roomId: string): Promise<RoomStatusResponse 
       worldAssetFormat: (currentRoom.worldAssetFormat as WorldAssetFormat | null) ?? null,
       worldKind: scene?.worldKind ?? 'fallback',
       generationWarnings: scene?.generationWarnings ?? [],
+      reconstructionWarnings: scene?.reconstructionWarnings ?? [],
+      qualityScore: scene?.qualityScore ?? null,
       progressLabel: 'We hit a snag while mapping your space.',
       errorMessage: currentRoom.providerError ?? 'Try another room angle or start a fresh generation.',
     }
@@ -976,6 +1141,8 @@ export async function getRoomStatus(roomId: string): Promise<RoomStatusResponse 
         worldAssetFormat: null,
         worldKind: scene?.worldKind ?? 'composed',
         generationWarnings: scene?.generationWarnings ?? [],
+        reconstructionWarnings: scene?.reconstructionWarnings ?? [],
+        qualityScore: scene?.qualityScore ?? null,
         progressLabel: 'The generated world did not finish syncing.',
         errorMessage: currentRoom.providerError ?? '3D AI Studio completed without returning a world asset.',
       }
@@ -991,8 +1158,14 @@ export async function getRoomStatus(roomId: string): Promise<RoomStatusResponse 
       worldAssetFormat: (currentRoom.worldAssetFormat as WorldAssetFormat | null) ?? null,
       worldKind: scene?.worldKind ?? (isMock ? 'fallback' : 'composed'),
       generationWarnings: scene?.generationWarnings ?? [],
+      reconstructionWarnings: scene?.reconstructionWarnings ?? [],
+      qualityScore: scene?.qualityScore ?? null,
       progressLabel:
-        hasRealWorldAsset ? 'Your reconstructed AI room is ready.' : 'Waiting for the generated world asset to finish syncing.',
+        scene?.worldKind === 'reconstructed'
+          ? 'Your reconstructed room is ready.'
+          : hasRealWorldAsset
+            ? 'Your reconstructed AI room is ready.'
+            : 'Waiting for the generated world asset to finish syncing.',
       redirectTo: '/buyer/room/result',
     }
   }
@@ -1000,6 +1173,7 @@ export async function getRoomStatus(roomId: string): Promise<RoomStatusResponse 
   const payload = currentRoom.providerPayload as Record<string, unknown> | null
   const progressPercent =
     payload && typeof payload.progress === 'number' ? payload.progress : null
+  const scene = getSceneData(currentRoom)
 
   return {
     roomId: currentRoom.id,
@@ -1010,15 +1184,19 @@ export async function getRoomStatus(roomId: string): Promise<RoomStatusResponse 
     previewImageUrl: currentRoom.previewImageUrl ?? currentRoom.imageUrl,
     worldAssetUrl: currentRoom.worldAssetUrl ?? null,
     worldAssetFormat: (currentRoom.worldAssetFormat as WorldAssetFormat | null) ?? null,
-    worldKind: getSceneData(currentRoom)?.worldKind ?? 'helper',
-    generationWarnings: getSceneData(currentRoom)?.generationWarnings ?? [],
+    worldKind: scene?.worldKind ?? 'helper',
+    generationWarnings: scene?.generationWarnings ?? [],
+    reconstructionWarnings: scene?.reconstructionWarnings ?? [],
+    qualityScore: scene?.qualityScore ?? null,
     progressPercent,
     progressLabel:
-      currentRoom.generationProvider === COMPOSED_PROVIDER
-        ? 'Analyzing your room photo, matching products, and composing a colored world.'
-        : currentRoom.generationProvider?.startsWith('3d-ai-studio')
-          ? '3D AI Studio is generating the room world from your uploaded photo.'
-          : 'No room photo uploaded — building a preview room instead of a generated world.',
+      scene?.worldKind === 'reconstructed'
+        ? 'Validating reconstruction quality against the uploaded room photo.'
+        : currentRoom.generationProvider === COMPOSED_PROVIDER
+          ? 'Analyzing your room photo, matching products, and composing a colored world.'
+          : currentRoom.generationProvider?.startsWith('3d-ai-studio')
+            ? '3D AI Studio is generating an optional room candidate from your uploaded photo.'
+            : 'No room photo uploaded - building a preview room instead of a generated world.',
   }
 }
 
@@ -1074,9 +1252,12 @@ export async function getRoomWorldPayload(roomId: string): Promise<RoomWorldPayl
       worldKind: mockRoom.worldKind,
       worldPreviewImageUrl: mockRoom.generatedImageUrl,
       roomAnalysis: mockRoom.roomAnalysis,
+      structuralAnalysis: mockRoom.scene.structuralAnalysis,
       sceneAnchors: mockRoom.sceneAnchors,
       placedItems: mockRoom.placedItems,
       generationWarnings: mockRoom.generationWarnings,
+      reconstructionWarnings: mockRoom.reconstructionWarnings,
+      qualityScore: mockRoom.qualityScore ?? null,
       scene: mockRoom.scene,
     }
   }
@@ -1112,9 +1293,12 @@ export async function getRoomWorldPayload(roomId: string): Promise<RoomWorldPayl
     worldKind: result.worldKind,
     worldPreviewImageUrl: result.worldPreviewImageUrl,
     roomAnalysis: result.roomAnalysis,
+    structuralAnalysis: result.structuralAnalysis,
     sceneAnchors: result.sceneAnchors,
     placedItems: result.placedItems,
     generationWarnings: result.generationWarnings,
+    reconstructionWarnings: result.reconstructionWarnings,
+    qualityScore: result.qualityScore ?? null,
     scene: result.scene,
   }
 }

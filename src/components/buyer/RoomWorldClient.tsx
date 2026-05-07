@@ -94,17 +94,19 @@ export function RoomWorldClient({ payload }: RoomWorldClientProps) {
           <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between bg-white/65 px-5 py-4 backdrop-blur-md">
             <div>
               <p className="text-stone text-xs font-semibold uppercase tracking-[0.24em]">
-                {payload.worldAssetUrl ? 'Generated 3D room · drag to explore' : 'Waiting for generated room'}
+                {payload.worldAssetUrl ? 'Reconstructed 3D room · drag to explore' : 'Waiting for reconstructed room'}
               </p>
               <h1 className="text-forest font-heading text-3xl font-semibold">{payload.roomTheme}</h1>
               <p className="text-stone mt-1 text-[11px] font-medium uppercase tracking-[0.18em]">
-                {payload.generationProvider?.startsWith('3d-ai-studio') && payload.worldAssetUrl
-                  ? `3D AI Studio world · ${payload.worldAssetFormat?.toUpperCase() ?? 'GLB'}`
+                {payload.worldKind === 'reconstructed' && payload.worldAssetUrl
+                  ? `Room-photo reconstruction · ${payload.worldAssetFormat?.toUpperCase() ?? 'GLB'}`
+                  : payload.generationProvider?.startsWith('3d-ai-studio') && payload.worldAssetUrl
+                    ? `3D AI Studio world · ${payload.worldAssetFormat?.toUpperCase() ?? 'GLB'}`
                   : payload.worldKind === 'composed' && payload.worldAssetUrl
                     ? `Composed world · ${payload.worldAssetFormat?.toUpperCase() ?? 'GLB'}`
                   : payload.generationProvider?.startsWith('3d-ai-studio')
                     ? 'Helper world shell'
-                    : 'Preview room · upload a photo for full generation'}
+                    : 'Preview room · upload a photo for full reconstruction'}
               </p>
             </div>
             <div className="flex items-center gap-2">
