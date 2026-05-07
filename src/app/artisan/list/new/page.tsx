@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { Camera, Image, Sun, ZoomIn, Layers, Info, ArrowRight, Loader2 } from 'lucide-react'
+import { Camera, Image as ImageIcon, Sun, ZoomIn, Layers, Info, ArrowRight, Loader2 } from 'lucide-react'
 import { TopNav } from '@/components/artisan/TopNav'
 import { BottomNav } from '@/components/artisan/BottomNav'
 import { supabase } from '@/lib/supabase'
@@ -142,19 +143,21 @@ export default function NewListingStep1Page() {
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className="border-border bg-muted flex aspect-square items-center justify-center overflow-hidden rounded-xl border"
-                >
-                  {previews[i] ? (
-                    <img
-                      src={previews[i]}
-                      alt={`Photo ${i + 1}`}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <Image className="text-stone/40 h-5 w-5" />
-                  )}
-                </div>
-              ))}
+                className="border-border bg-muted flex aspect-square items-center justify-center overflow-hidden rounded-xl border"
+              >
+                {previews[i] ? (
+                  <Image
+                    src={previews[i]}
+                    alt={`Photo ${i + 1}`}
+                    fill
+                    sizes="96px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <ImageIcon className="text-stone/40 h-5 w-5" />
+                )}
+              </div>
+            ))}
             </div>
           </div>
 

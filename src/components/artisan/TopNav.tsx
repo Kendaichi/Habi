@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Bell, ShoppingCart, X, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
@@ -26,8 +27,10 @@ export function TopNav({ profileImage }: TopNavProps) {
           <Link href="/shared/profile" className="border-forest/30 block h-10 w-10 overflow-hidden rounded-full border-2">
             <img
               alt="User Profile"
-              className="h-full w-full object-cover"
               src={profileImage ?? '/Habi_Logo.png'}
+              fill
+              sizes="40px"
+              className="object-cover"
             />
           </Link>
           <div className="flex flex-col">

@@ -8,6 +8,7 @@ import {
   Sparkles,
   ArrowRight,
 } from 'lucide-react'
+import Image from 'next/image'
 import { TopNav } from '@/components/artisan/TopNav'
 import { BottomNav } from '@/components/artisan/BottomNav'
 import Link from 'next/link'
@@ -147,10 +148,12 @@ export default function MySustainableSpacePage() {
                 key={p.name}
                 className="group relative aspect-4/3 overflow-hidden rounded-2xl bg-stone-200"
               >
-                <img
+                <Image
                   src={p.src}
                   alt={p.name}
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  fill
+                  sizes="(max-width: 768px) 50vw, 33vw"
+                  className="object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/60 to-transparent p-3 text-white">
                   <p className="text-[10px] font-bold tracking-wide uppercase">{p.name}</p>
@@ -228,8 +231,8 @@ export default function MySustainableSpacePage() {
             Style Recommendation
           </h3>
           <p className="text-stone mb-5 text-sm leading-relaxed italic">
-            "Your T'nalak patterns are trending in high-ceiling minimalist lofts. Consider creating
-            longer vertical runners for these specific spaces."
+            &ldquo;Your T&apos;nalak patterns are trending in high-ceiling minimalist lofts.
+            Consider creating longer vertical runners for these specific spaces.&rdquo;
           </p>
           <Link
             href="/artisan/demand"
