@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import Image from 'next/image'
 import {
   Search,
   MapPin,
@@ -253,9 +254,11 @@ export function MaterialsClient({ hubs, requests }: { hubs: HubRow[]; requests: 
                 </div>
 
                 {req.photoUrl && (
-                  <img
+                  <Image
                     src={req.photoUrl}
                     alt="Reference"
+                    width={800}
+                    height={224}
                     className="h-28 w-full rounded-xl object-cover"
                   />
                 )}

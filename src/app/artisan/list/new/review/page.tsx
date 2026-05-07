@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { Upload, ArrowLeft, Recycle, Wrench, Building2, CheckCircle } from 'lucide-react'
 import { TopNav } from '@/components/artisan/TopNav'
@@ -55,12 +55,8 @@ const TYPE_LABEL: Record<string, string> = {
 export default function NewListingReviewPage() {
   const [agreed, setAgreed] = useState(false)
   const [isPending, startTransition] = useTransition()
-  const [draft, setDraft] = useState<Partial<ListingDraft>>({})
+  const [draft, setDraft] = useState<Partial<ListingDraft>>(() => readDraft())
   const [actionError, setActionError] = useState<string | null>(null)
-
-  useEffect(() => {
-    setDraft(readDraft())
-  }, [])
 
   const primaryListing = draft.listings?.[0]
   const priceFormatted = primaryListing

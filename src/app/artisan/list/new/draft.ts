@@ -9,14 +9,17 @@ export type ListingDraft = {
 }
 
 export function saveDraft(patch: Partial<ListingDraft>) {
+  if (typeof window === 'undefined') return
   const existing: Partial<ListingDraft> = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? '{}')
   localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...existing, ...patch }))
 }
 
 export function readDraft(): Partial<ListingDraft> {
+  if (typeof window === 'undefined') return {}
   return JSON.parse(localStorage.getItem(DRAFT_KEY) ?? '{}')
 }
 
 export function clearDraft() {
+  if (typeof window === 'undefined') return
   localStorage.removeItem(DRAFT_KEY)
 }

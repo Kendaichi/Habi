@@ -46,7 +46,7 @@ function RoomShell({ palette }: { palette: RoomSceneData['palette'] }) {
   )
 }
 
-function BaseBoardTrim({ palette }: { palette: RoomSceneData['palette'] }) {
+function BaseBoardTrim() {
   const mat = new THREE.MeshStandardMaterial({ color: '#f0e8db', roughness: 0.6 })
   const h = 0.12
   return (
@@ -241,7 +241,7 @@ export function ProceduralRoomScene({ scene, activeListingId, onHotspotClick }: 
       <pointLight position={[0, 2.8, -1]} intensity={0.6} color="#fff5e8" />
 
       <RoomShell palette={scene.palette} />
-      <BaseBoardTrim palette={scene.palette} />
+      <BaseBoardTrim />
       <Furniture hotspots={scene.hotspots} accent={scene.palette.accent} />
 
       {scene.hotspots.map((hotspot) => (

@@ -39,7 +39,7 @@ const MOCK_PROVIDER = 'mock-fallback'
 const COMPOSED_PROVIDER = 'app-composed-world-v1'
 
 const mockRoomStore = new Map<string, MockRoomRecord>()
-let latestMockRoomId: string | null = null
+const latestMockRoomId: string | null = null
 
 type ListingRecord = Prisma.ListingGetPayload<{
   include: {
@@ -823,11 +823,11 @@ export async function createRoomGeneration(
   const providerRecommendations = buildProviderRecommendationContext(recommendations)
 
   let composed = null as Awaited<ReturnType<typeof buildComposedScene>> | null
-  let generationProvider = useThreeDAIPrimary ? getThreeDAIProviderName() : COMPOSED_PROVIDER
-  let providerStatus: string = useThreeDAIPrimary ? 'PENDING' : 'COMPLETED'
+  const generationProvider = useThreeDAIPrimary ? getThreeDAIProviderName() : COMPOSED_PROVIDER
+  const providerStatus: string = useThreeDAIPrimary ? 'PENDING' : 'COMPLETED'
   let providerError: string | null = null
-  let worldAssetUrl: string | null = null
-  let worldAssetFormat: WorldAssetFormat | null = null
+  const worldAssetUrl: string | null = null
+  const worldAssetFormat: WorldAssetFormat | null = null
   let previewImageUrl: string | null = buildRoomArtwork(
     preset.roomTheme,
     preset.wall,
@@ -835,7 +835,7 @@ export async function createRoomGeneration(
     preset.accent,
     [],
   )
-  let generationStatus: Room3DGenerationStatus = useThreeDAIPrimary
+  const generationStatus: Room3DGenerationStatus = useThreeDAIPrimary
     ? Room3DGenerationStatus.PROCESSING
     : Room3DGenerationStatus.COMPLETED
   let scene: RoomSceneData = {
