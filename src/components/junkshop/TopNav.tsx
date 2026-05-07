@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { Bell } from 'lucide-react'
 import Link from 'next/link'
 
@@ -11,7 +12,7 @@ export function TopNav({ profileImage }: TopNavProps) {
     <header className="bg-cream border-stone/20 sticky top-0 z-50 flex w-full items-center justify-between border-b px-6 py-3">
       <div className="flex items-center gap-3">
         <Link href="/shared/profile" className="border-forest/30 block h-10 w-10 overflow-hidden rounded-full border-2">
-          <img
+          <Image
             alt="User Profile"
             src={profileImage ?? '/Habi_Logo.png'}
             fill
