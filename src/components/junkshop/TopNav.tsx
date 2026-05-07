@@ -11,7 +11,7 @@ export function TopNav({ profileImage }: TopNavProps) {
   return (
     <header className="bg-cream border-stone/20 sticky top-0 z-50 flex w-full items-center justify-between border-b px-6 py-3">
       <div className="flex items-center gap-3">
-        <Link href="/shared/profile" className="border-forest/30 block h-10 w-10 overflow-hidden rounded-full border-2">
+        <Link href="/shared/profile" className="border-forest/30 relative block h-10 w-10 overflow-hidden rounded-full border-2">
           <Image
             alt="User Profile"
             src={profileImage ?? '/Habi_Logo.png'}
