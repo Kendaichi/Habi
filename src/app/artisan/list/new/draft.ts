@@ -5,6 +5,7 @@ export type ListingDraft = {
   listings: { type: string; price: number }[]
   name: string
   description: string
+  images: string[]
 }
 
 export function saveDraft(patch: Partial<ListingDraft>) {

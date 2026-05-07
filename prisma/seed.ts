@@ -9,10 +9,69 @@ import {
 } from '../src/generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { Pool } from 'pg'
+import { createClient } from '@supabase/supabase-js'
+import fs from 'fs'
+import path from 'path'
 
 const pool = new Pool({ connectionString: process.env.DIRECT_URL })
 const adapter = new PrismaPg(pool)
 const prisma = new PrismaClient({ adapter })
+
+const BUCKET = 'product-images'
+const SHOP_BUCKET = 'shop-images'
+
+// Service role key bypasses RLS; falls back to anon key for public buckets
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
+const productImageFiles: Record<string, string> = {
+  'prod-plastic-brick-panels': 'plastic-bricks.webp',
+  'prod-woven-abaca-rugs': 'abaca-rug.webp',
+  'prod-rattan-baskets': 'ratan-basket.webp',
+  'prod-bamboo-planters': 'bamboo-planter.webp',
+  'prod-coco-coir-mats': 'coco-coir-mat.webp',
+  'prod-clay-pottery': 'clay-pot.webp',
+  'prod-upcycled-wood-trays': 'wood-tray.webp',
+}
+
+async function uploadSeedImage(productId: string, filename: string): Promise<string> {
+  const filePath = path.join(process.cwd(), 'prisma', 'product-images', filename)
+  const buffer = fs.readFileSync(filePath)
+  const storagePath = `seed/${productId}.webp`
+
+  const { error } = await supabase.storage.from(BUCKET).upload(storagePath, buffer, {
+    contentType: 'image/webp',
+    upsert: true,
+  })
+
+  if (error) {
+    console.warn(`  ⚠ Image upload failed for ${productId}: ${error.message}`)
+    return ''
+  }
+
+  const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath)
+  return data.publicUrl
+}
+
+async function uploadShopImage(localFilename: string, storagePath: string): Promise<string> {
+  const filePath = path.join(process.cwd(), 'prisma', 'shop-images', localFilename)
+  const buffer = fs.readFileSync(filePath)
+
+  const { error } = await supabase.storage.from(SHOP_BUCKET).upload(storagePath, buffer, {
+    contentType: 'image/webp',
+    upsert: true,
+  })
+
+  if (error) {
+    console.warn(`  ⚠ Upload failed for ${storagePath}: ${error.message}`)
+    return ''
+  }
+
+  const { data } = supabase.storage.from(SHOP_BUCKET).getPublicUrl(storagePath)
+  return data.publicUrl
+}
 
 async function main() {
   // ── Users ──────────────────────────────────────────────────────────────────
@@ -75,10 +134,14 @@ async function main() {
   ]
 
   for (const shop of junkShops) {
+    const image = await uploadShopImage('hero.webp', `seed/${shop.id}-hero.webp`)
+    const galleryImages = await Promise.all(
+      [0, 1, 2, 3].map((i) => uploadShopImage(`gallery-${i}.webp`, `seed/${shop.id}-g${i}.webp`))
+    )
     await prisma.junkShop.upsert({
       where: { id: shop.id },
-      update: {},
-      create: shop,
+      update: { image, galleryImages },
+      create: { ...shop, image, galleryImages },
     })
   }
 
@@ -197,10 +260,13 @@ async function main() {
   ]
 
   for (const product of products) {
+    const filename = productImageFiles[product.id]
+    const imageUrl = filename ? await uploadSeedImage(product.id, filename) : ''
+    const images = imageUrl ? [imageUrl] : []
     await prisma.product.upsert({
       where: { id: product.id },
-      update: {},
-      create: { ...product, images: [], artisanId: artisan.id },
+      update: { images },
+      create: { ...product, images, artisanId: artisan.id },
     })
   }
 
@@ -447,9 +513,9 @@ async function main() {
 
   console.log(`Seeded:
   - 2 users (1 artisan, 1 buyer)
-  - ${junkShops.length} junk shops
+  - ${junkShops.length} junk shops (with hero + 4 gallery images → seed/)
   - ${materials.length} materials
-  - ${products.length} products
+  - ${products.length} products (with images uploaded to Supabase Storage → seed/)
   - ${chains.length} traceability chains
   - ${listings.length} listings
   - ${orders.length} orders
