@@ -66,11 +66,26 @@ async function getPrototypeProfile(role: Role) {
       ? 'user-buyer-juan'
       : role === Role.ARTISAN
         ? 'user-artisan-sitti'
+        : role === Role.JUNKSHOP
+          ? 'user-junkshop-demo'
         : null
 
   if (seededId) {
     const seeded = await prisma.user.findUnique({ where: { id: seededId } })
     if (seeded) return seeded
+
+    if (role === Role.JUNKSHOP) {
+      return prisma.user.upsert({
+        where: { id: seededId },
+        update: {},
+        create: {
+          id: seededId,
+          email: 'junkshop.demo@habi.ph',
+          name: 'Junk Shop Demo',
+          role: Role.JUNKSHOP,
+        },
+      })
+    }
   }
 
   return prisma.user.findFirst({ where: { role } })

@@ -13,7 +13,8 @@ const roles: Array<{
   description: string
   iconBg: string
   iconColor: string
-  imageBg: string
+  imageSrc: string
+  imageAlt: string
   icon: ReactNode
 }> = [
   {
@@ -23,7 +24,8 @@ const roles: Array<{
       'Discover and buy, rent, or lease unique handcrafted items while supporting local circular economies.',
     iconBg: 'bg-terracotta/10',
     iconColor: 'text-terracotta',
-    imageBg: 'bg-[#C4A882]',
+    imageSrc: '/buyer.jpg',
+    imageAlt: 'Buyer browsing Habi circular marketplace products',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
@@ -45,7 +47,8 @@ const roles: Array<{
       'Sell your creations and find sustainable, upcycled materials sourced directly from junk shop networks near you.',
     iconBg: 'bg-forest/10',
     iconColor: 'text-forest',
-    imageBg: 'bg-[#8B7355]',
+    imageSrc: '/artisan.jpg',
+    imageAlt: 'Artisan crafting upcycled home decor',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
@@ -64,7 +67,8 @@ const roles: Array<{
       'Connect your sorted waste materials with creative artisans looking for high-quality recycled inputs for their work.',
     iconBg: 'bg-forest/10',
     iconColor: 'text-forest',
-    imageBg: 'bg-[#6B7280]',
+    imageSrc: '/junkshop.jpg',
+    imageAlt: 'Junk shop sorting reusable materials',
     icon: (
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <path
@@ -123,7 +127,15 @@ export default function RoleSelectPage() {
 
             <h2 className="font-heading text-charcoal text-2xl font-bold">{role.title}</h2>
             <p className="text-stone mt-1 mb-4 text-sm leading-relaxed">{role.description}</p>
-            <div className={`mb-4 h-40 w-full overflow-hidden rounded-xl ${role.imageBg}`} />
+            <div className="relative mb-4 h-40 w-full overflow-hidden rounded-xl bg-stone-100">
+              <Image
+                src={role.imageSrc}
+                alt={role.imageAlt}
+                fill
+                sizes="(max-width: 640px) calc(100vw - 72px), 420px"
+                className="object-cover"
+              />
+            </div>
 
             <Button
               type="button"

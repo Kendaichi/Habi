@@ -55,8 +55,7 @@ export default function LogMaterialPage() {
             Sorted for the Circular Economy
           </h2>
           <p className="mx-auto max-w-md font-['Inter'] text-base text-[#404942]">
-            Your contributions help Mindanao&apos;s artisans turn waste into heritage-quality
-            crafts.
+            Your contributions help Mindanao&apos;s artisans turn waste into heritage-quality crafts.
           </p>
         </div>
 

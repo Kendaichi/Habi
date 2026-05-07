@@ -1,6 +1,7 @@
 import Link from 'next/link'
-import { ArrowRight, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { BuyerScreenShell } from '@/components/buyer/BuyerScreenShell'
+import { BuyerProductSearch } from '@/components/buyer/BuyerProductSearch'
 import { getBuyerHomeRecommendations } from '@/lib/room-service'
 
 export default async function BuyerHomePage() {
@@ -27,38 +28,7 @@ export default async function BuyerHomePage() {
         <Sparkles className="h-7 w-7 shrink-0" />
       </Link>
 
-      <div className="mt-8 space-y-4">
-        {recommendations.slice(0, 3).map((recommendation) => (
-          <Link
-            key={recommendation.listingId}
-            href={`/buyer/product/${recommendation.productId}`}
-            className="block overflow-hidden rounded-lg border border-stone-200 bg-white shadow-[0_18px_44px_rgba(44,44,44,0.08)]"
-          >
-            <div
-              className="h-52 bg-cover bg-center"
-              style={{ backgroundImage: `url(${recommendation.imageUrl})` }}
-            />
-            <div className="p-5">
-              <p className="text-forest text-[11px] font-semibold uppercase tracking-[0.22em]">
-                {recommendation.materialType}
-              </p>
-              <h2 className="font-heading text-charcoal mt-2 text-3xl font-semibold">
-                {recommendation.productName}
-              </h2>
-              <p className="text-stone mt-2 text-sm">by {recommendation.artisanName}</p>
-              <div className="mt-4 flex items-center justify-between gap-3">
-                <p className="text-charcoal text-2xl font-semibold">
-                  PHP {recommendation.price.toLocaleString('en-PH')}
-                </p>
-                <span className="text-terracotta inline-flex items-center gap-1 text-sm font-semibold">
-                  Explore
-                  <ArrowRight className="h-4 w-4" />
-                </span>
-              </div>
-            </div>
-          </Link>
-        ))}
-      </div>
+      <BuyerProductSearch recommendations={recommendations} />
     </BuyerScreenShell>
   )
 }

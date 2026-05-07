@@ -1,5 +1,6 @@
 'use client'
 
+import NextImage from 'next/image'
 import { useState, useRef } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
@@ -55,6 +56,12 @@ export default function NewListingStep1Page() {
     const urls: string[] = []
 
     try {
+      if (!supabase) {
+        saveDraft({ images: [] })
+        router.push('/artisan/list/new/materials')
+        return
+      }
+
       for (const file of files) {
         const ext = file.name.split('.').pop() ?? 'jpg'
         const path = `pending/${crypto.randomUUID()}.${ext}`
@@ -143,21 +150,22 @@ export default function NewListingStep1Page() {
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                className="border-border bg-muted flex aspect-square items-center justify-center overflow-hidden rounded-xl border"
-              >
-                {previews[i] ? (
-                  <Image
-                    src={previews[i]}
-                    alt={`Photo ${i + 1}`}
-                    fill
-                    sizes="96px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <ImageIcon className="text-stone/40 h-5 w-5" />
-                )}
-              </div>
-            ))}
+                  className="border-border bg-muted relative flex aspect-square items-center justify-center overflow-hidden rounded-xl border"
+                >
+                  {previews[i] ? (
+                    <NextImage
+                      src={previews[i]}
+                      alt={`Photo ${i + 1}`}
+                      fill
+                      unoptimized
+                      sizes="96px"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <ImageIcon className="text-stone/40 h-5 w-5" />
+                  )}
+                </div>
+              ))}
             </div>
           </div>
 
