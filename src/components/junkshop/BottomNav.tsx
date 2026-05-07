@@ -1,6 +1,6 @@
 'use client'
 
-import { Home, Boxes, Users, UserCircle } from 'lucide-react'
+import { Home, Boxes, Users } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { LucideIcon } from 'lucide-react'

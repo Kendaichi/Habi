@@ -1,4 +1,5 @@
 import { MapPin, Heart, Leaf } from 'lucide-react'
+import Image from 'next/image'
 import { TopNav } from '@/components/junkshop/TopNav'
 import { BottomNav } from '@/components/junkshop/BottomNav'
 import { prisma } from '@/lib/prisma'
@@ -21,10 +22,12 @@ export default async function JunkshopNetworkPage() {
         {/* Hero / Map Preview */}
         <section className="mb-12">
           <div className="relative h-62.5 overflow-hidden rounded-3xl shadow-lg md:h-87.5">
-            <img
+            <Image
               alt="Artisan map view"
-              className="h-full w-full object-cover"
               src="https://lh3.googleusercontent.com/aida/ADBb0ugBStm_rJt0KSX4DxrhzNZFJEONJ5uFbkBB-H-L4zsFoYO9x7nM50JCKwz6bvtw1y7qwMPR0ZkI5A01r4yjTjDKcYxX2_hAE-ehjTXzxogZull6S1EFargFVb9qLW_rZWArT4_TXBN-ASTW6A0j__aAed34Q5aJsTZhAntwdHEZoMKIsZhimBfvDVDiMIWX9Gx0K0oH_G5DEOyHo3dqZVGYkQw2ZUnkEuhc7MDoFLBzT2vUtOjspuZ9WIwOmvBGUYbF78l8s4uN8NM"
+              fill
+              sizes="(max-width: 768px) 100vw, 768px"
+              className="object-cover"
             />
             <div className="absolute inset-0 flex items-end bg-linear-to-t from-black/60 to-transparent p-8">
               <div>

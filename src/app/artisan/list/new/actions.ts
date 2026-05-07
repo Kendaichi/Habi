@@ -58,7 +58,7 @@ export async function publishListing({
   images: string[]
   listings: { type: string; price: number }[]
 }) {
-  const artisan = await requireRole(Role.ARTISAN)
+  await requireRole(Role.ARTISAN)
   const product = await prisma.product.create({
     data: {
       name,

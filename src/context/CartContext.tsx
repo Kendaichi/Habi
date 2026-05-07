@@ -22,18 +22,16 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | null>(null)
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([])
-
-  useEffect(() => {
+  const [items, setItems] = useState<CartItem[]>(() => {
+    if (typeof window === 'undefined') return []
     const stored = localStorage.getItem('habi-quote-cart')
-    if (stored) {
-      try {
-        setItems(JSON.parse(stored))
-      } catch {
-        // ignore malformed storage
-      }
+    if (!stored) return []
+    try {
+      return JSON.parse(stored)
+    } catch {
+      return []
     }
-  }, [])
+  })
 
   useEffect(() => {
     localStorage.setItem('habi-quote-cart', JSON.stringify(items))
