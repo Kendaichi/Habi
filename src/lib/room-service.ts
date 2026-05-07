@@ -31,7 +31,7 @@ import type {
   WorldAssetFormat,
 } from '@/types/room'
 
-const BUYER_ID = 'user-buyer-juan'
+const FALLBACK_BUYER_ID = 'user-buyer-juan'
 const ROOM_COMPLETION_DELAY_MS = 2400
 const MOCK_PROVIDER = 'mock-fallback'
 const COMPOSED_PROVIDER = 'app-composed-world-v1'
@@ -723,7 +723,10 @@ function hydrateMockResult(room: MockRoomRecord): RoomResultPayload {
   }
 }
 
-export async function createRoomGeneration(input: RoomGenerateRequest): Promise<{ roomId: string }> {
+export async function createRoomGeneration(
+  input: RoomGenerateRequest,
+  userId = FALLBACK_BUYER_ID,
+): Promise<{ roomId: string }> {
   const preset = getRoomPreset(input.presetId)
   const roomId = `room-${crypto.randomUUID()}`
   const hasRealPhoto = Boolean(input.imageUrl && !input.imageUrl.startsWith('data:image/svg+xml'))
@@ -826,7 +829,7 @@ export async function createRoomGeneration(input: RoomGenerateRequest): Promise<
     const createdRoom = await prisma.room.create({
       data: {
         id: roomId,
-        userId: BUYER_ID,
+        userId,
         imageUrl: previewImageUrl ?? sourceImageUrl ?? buildRoomArtwork(preset.roomTheme, preset.wall, preset.floor, preset.accent, []),
         previewImageUrl,
         generationStatus,
@@ -839,7 +842,7 @@ export async function createRoomGeneration(input: RoomGenerateRequest): Promise<
         providerError,
         scan: {
           create: {
-            buyerId: BUYER_ID,
+            buyerId: userId,
             imageUrl: sourceImageUrl ?? previewImageUrl ?? '',
             recommendations: recommendations.map((recommendation) => recommendation.listingId),
             analysis: {
@@ -1019,7 +1022,9 @@ export async function getRoomStatus(roomId: string): Promise<RoomStatusResponse 
   }
 }
 
-export async function getLatestCompletedRoomResult(): Promise<RoomResultPayload | null> {
+export async function getLatestCompletedRoomResult(
+  userId = FALLBACK_BUYER_ID,
+): Promise<RoomResultPayload | null> {
   if (latestMockRoomId) {
     const mockRoom = mockRoomStore.get(latestMockRoomId)
     if (mockRoom) {
@@ -1033,7 +1038,7 @@ export async function getLatestCompletedRoomResult(): Promise<RoomResultPayload 
   let room: RoomRecord | null
   try {
     room = await prisma.room.findFirst({
-      where: { userId: BUYER_ID },
+      where: { userId },
       include: { scan: true },
       orderBy: { createdAt: 'desc' },
     })
@@ -1119,8 +1124,11 @@ function getMockProductDescription(productId: string): string | null {
   return product?.description ?? null
 }
 
-export async function getVisualizerPayload(listingId: string): Promise<RoomVisualizerPayload | null> {
-  const result = await getLatestCompletedRoomResult()
+export async function getVisualizerPayload(
+  listingId: string,
+  userId = FALLBACK_BUYER_ID,
+): Promise<RoomVisualizerPayload | null> {
+  const result = await getLatestCompletedRoomResult(userId)
   if (!result) return null
 
   const recommendation = result.recommendations.find((item) => item.listingId === listingId)
@@ -1229,4 +1237,4 @@ export async function getBuyerHomeRecommendations(): Promise<RoomRecommendation[
   return getRankedRecommendations(ROOM_PRESETS[0].id, analysis)
 }
 
-export { BUYER_ID }
+export { FALLBACK_BUYER_ID }

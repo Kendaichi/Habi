@@ -1,8 +1,25 @@
-export default function BuyerRequestPage() {
+import { BuyerScreenShell } from '@/components/buyer/BuyerScreenShell'
+import { CustomRequestForm } from '@/components/buyer/CustomRequestForm'
+import { Role } from '@/generated/prisma/enums'
+import { requireRole } from '@/lib/auth'
+
+export default async function BuyerRequestPage() {
+  await requireRole(Role.BUYER)
+
   return (
-    <div className="min-h-screen bg-cream p-6">
-      <h1 className="font-heading text-2xl font-bold text-charcoal">Request a Piece</h1>
-      <p className="text-stone mt-2 text-sm">Placeholder — custom request page</p>
-    </div>
+    <BuyerScreenShell title="Custom Request" eyebrow="Bespoke">
+      <div className="mb-6">
+        <p className="text-forest text-xs font-semibold uppercase tracking-[0.24em]">
+          Custom Request
+        </p>
+        <h1 className="font-heading mt-2 text-5xl font-semibold leading-tight text-charcoal">
+          Build for your space
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-stone">
+          Send a room brief, budget, and material preferences so Habi artisans can bid.
+        </p>
+      </div>
+      <CustomRequestForm />
+    </BuyerScreenShell>
   )
 }

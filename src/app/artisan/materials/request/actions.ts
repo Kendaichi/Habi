@@ -1,6 +1,9 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { randomUUID } from 'node:crypto'
+import { Role } from '@/generated/prisma/enums'
+import { requireRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 export async function deleteRequest(id: string) {
@@ -50,6 +53,7 @@ export async function submitMaterialRequest({
   description: string
   photoUrl?: string
 }) {
+  await requireRole(Role.ARTISAN)
   await prisma.materialRequest.create({
     data: {
       id: crypto.randomUUID(),

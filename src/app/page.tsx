@@ -1,27 +1,13 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { getCurrentUserProfile } from '@/lib/auth'
+import { getRoleHomeRoute, type AppRole } from '@/lib/role-routes'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+export default async function RootPage() {
+  const profile = await getCurrentUserProfile()
 
-export default function RootPage() {
-  const router = useRouter()
+  if (!profile) {
+    redirect('/onboarding/role-select')
+  }
 
-  useEffect(() => {
-    const role = localStorage.getItem('habi_role')
-    if (!role) {
-      router.replace('/onboarding/role-select')
-    } else if (role === 'buyer') {
-      router.replace('/buyer/home')
-    } else if (role === 'junkshop') {
-      router.replace('/junkshop/home')
-    } else if (role === 'artisan') {
-      router.replace('/artisan/dashboard')
-    } else if (role === 'supplier') {
-      router.replace('/supplier/dashboard')
-    } else {
-      router.replace('/onboarding/role-select')
-    }
-  }, [router])
-
-  return null
+  redirect(getRoleHomeRoute(profile.role.toLowerCase() as AppRole))
 }

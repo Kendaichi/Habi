@@ -179,6 +179,7 @@ enum Role {
   BUYER
   ARTISAN
   SUPPLIER
+  JUNKSHOP
 }
 
 enum Room3DGenerationStatus {

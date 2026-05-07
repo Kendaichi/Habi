@@ -3,9 +3,9 @@ import Link from 'next/link'
 import { TopNav } from '@/components/junkshop/TopNav'
 import { BottomNav } from '@/components/junkshop/BottomNav'
 import { DashboardSection } from '@/components/shared/DashboardSection'
+import { Role } from '@/generated/prisma/enums'
+import { requireRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-
-const JUNKSHOP_ID = 'junkshop-manila-plastic-hub'
 
 const MATERIAL_STYLE: Record<
   string,
@@ -51,17 +51,25 @@ const DEFAULT_STYLE = {
 }
 
 export default async function JunkshopDashboardPage() {
-  const shop = await prisma.junkShop.findUnique({
-    where: { id: JUNKSHOP_ID },
-    include: {
-      materialsList: true,
-      traceChains: {
-        include: { product: true, artisan: true },
-        orderBy: { id: 'desc' },
-        take: 3,
-      },
-    },
-  })
+  const user = await requireRole(Role.JUNKSHOP)
+  const shopMatch =
+    (await prisma.junkShop.findFirst({
+      where: { name: { contains: user.name, mode: 'insensitive' } },
+    })) ?? (await prisma.junkShop.findFirst())
+
+  const shop = shopMatch
+    ? await prisma.junkShop.findUnique({
+        where: { id: shopMatch.id },
+        include: {
+          materialsList: true,
+          traceChains: {
+            include: { product: true, artisan: true },
+            orderBy: { id: 'desc' },
+            take: 3,
+          },
+        },
+      })
+    : null
 
   const totalKg = shop?.materialsList.reduce((s, m) => s + m.quantityKg, 0) ?? 0
   const totalTons = (totalKg / 1000).toFixed(1)

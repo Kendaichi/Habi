@@ -1,8 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { ReturnsClient, type ReturnRow } from './ReturnsClient'
-import { RefurbStatus } from '@/generated/prisma/enums'
-
-const ARTISAN_ID = 'user-artisan-sitti'
+import { RefurbStatus, Role } from '@/generated/prisma/enums'
+import { requireRole } from '@/lib/auth'
 
 const MATERIAL_BG: Record<string, string> = {
   Plastic: 'from-[#A0B4C8] to-[#6080A0]',
@@ -20,9 +19,9 @@ type RentalFull = {
   buyer: { name: string }
 }
 
-function getRentalDetail(status: string, endDate: Date): string {
+function getRentalDetail(status: string, endDate: Date, now: number): string {
   if (status === RefurbStatus.IN_USE) {
-    const days = Math.max(0, Math.ceil((endDate.getTime() - Date.now()) / 86_400_000))
+    const days = Math.max(0, Math.ceil((endDate.getTime() - now) / 86_400_000))
     return `${days} day${days !== 1 ? 's' : ''} remaining`
   }
   if (status === RefurbStatus.AWAITING) return 'Lease period ended'
@@ -36,8 +35,10 @@ function mapRefurbStatus(status: string): ReturnRow['status'] {
 }
 
 export default async function ArtisanReturnsPage() {
+  const artisan = await requireRole(Role.ARTISAN)
+  const now = new Date().getTime()
   const rentals = (await prisma.rental.findMany({
-    where: { listing: { product: { artisanId: ARTISAN_ID } } },
+    where: { listing: { product: { artisanId: artisan.id } } },
     include: {
       listing: { include: { product: true } },
       buyer: true,
@@ -49,7 +50,7 @@ export default async function ArtisanReturnsPage() {
     id: r.id,
     productName: r.listing.product.name,
     status: mapRefurbStatus(r.refurbStatus),
-    detail: getRentalDetail(r.refurbStatus, r.endDate),
+    detail: getRentalDetail(r.refurbStatus, r.endDate, now),
     buyerName: r.buyer.name,
     imageBg: MATERIAL_BG[r.listing.product.materialType] ?? DEFAULT_BG,
   }))

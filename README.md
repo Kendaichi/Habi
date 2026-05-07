@@ -51,11 +51,13 @@ src/
 **Prerequisites:** Node.js 18+, PostgreSQL database (Supabase recommended)
 
 1. Install dependencies:
+
    ```bash
    npm install
    ```
 
 2. Set up environment variables — create a `.env` file:
+
    ```
    DATABASE_URL="postgresql://..."   # Pooled connection (app)
    DIRECT_URL="postgresql://..."     # Direct connection (migrations)
@@ -64,6 +66,7 @@ src/
    ```
 
 3. Run database migrations:
+
    ```bash
    npx prisma migrate dev
    ```
@@ -80,15 +83,16 @@ Open [http://localhost:3000](http://localhost:3000) and select a role to begin.
 Key models: `User`, `Product`, `Listing` (sale/rent/lease), `Order`, `Rental`, `JunkShop`, `TraceabilityChain`, `Material`, `DemandSignal`, `RoomScan`, `CustomRequest`.
 
 To explore the schema:
+
 ```bash
 npx prisma studio
 ```
 
 ## Scripts
 
-| Command | Description |
-|---|---|
-| `npm run dev` | Start development server |
-| `npm run build` | Production build |
-| `npm run start` | Run production server |
-| `npm run lint` | Run ESLint |
+| Command         | Description              |
+| --------------- | ------------------------ |
+| `npm run dev`   | Start development server |
+| `npm run build` | Production build         |
+| `npm run start` | Run production server    |
+| `npm run lint`  | Run ESLint               |
