@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Eye, RefreshCcw, Timer, History, Plus, Pencil, Upload } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { TopNav } from '@/components/artisan/TopNav'
 import { BottomNav } from '@/components/artisan/BottomNav'
@@ -90,10 +91,12 @@ export function ListingsClient({ listings }: { listings: ListingRow[] }) {
                 {/* Product image */}
                 <div className={`relative h-44 w-full overflow-hidden bg-linear-to-br ${listing.imageBg}`}>
                   {listing.images[0] ? (
-                    <img
+                    <Image
                       src={listing.images[0]}
                       alt={listing.productName}
-                      className="h-full w-full object-cover"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover"
                     />
                   ) : (
                     <div

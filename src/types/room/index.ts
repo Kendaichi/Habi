@@ -135,6 +135,7 @@ export type RoomRecommendation = {
   primaryMode: AcquisitionMode
   availableModes: AcquisitionMode[]
   imageUrl: string
+  imageUrls: string[]
   score: number
   reasonTags: string[]
   summary: string

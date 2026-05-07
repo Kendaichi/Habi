@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Bell, ShoppingCart, X, Trash2 } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 
@@ -22,11 +23,13 @@ export function TopNav({ profileImage }: TopNavProps) {
     <>
       <header className="bg-cream border-stone/20 sticky top-0 z-50 flex w-full items-center justify-between border-b px-6 py-3">
         <div className="flex items-center gap-3">
-          <div className="border-forest/30 h-10 w-10 overflow-hidden rounded-full border-2">
-            <img
+          <div className="border-forest/30 relative h-10 w-10 overflow-hidden rounded-full border-2">
+            <Image
               alt="User Profile"
-              className="h-full w-full object-cover"
               src={profileImage ?? '/Habi_Logo.png'}
+              fill
+              sizes="40px"
+              className="object-cover"
             />
           </div>
           <div className="flex flex-col">

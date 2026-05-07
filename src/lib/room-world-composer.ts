@@ -58,14 +58,6 @@ function toBaseColorFactor(hex: string, alpha = 1): [number, number, number, num
   return [r / 255, g / 255, b / 255, alpha]
 }
 
-function hashText(value: string): number {
-  let hash = 0
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 33 + value.charCodeAt(index)) >>> 0
-  }
-  return hash
-}
-
 function inferObjectKind(recommendation: RoomRecommendation, anchor: RoomSceneAnchor): RoomPlacedItem['objectKind'] {
   const name = recommendation.productName.toLowerCase()
   if (anchor.type === 'wall') return 'wall-art'
