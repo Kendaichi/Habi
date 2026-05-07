@@ -43,10 +43,12 @@ export default async function MyListingsPage() {
       productName: l.product.name,
       productDescription: l.product.description,
       status: l.status.toLowerCase() as ListingRow['status'],
+      type: l.type.toLowerCase() as ListingRow['type'],
       views: l.views,
       rentalCount: listingRentals.length,
       daysRemaining,
       imageBg: MATERIAL_BG[l.product.materialType] ?? DEFAULT_BG,
+      images: l.product.images,
     }
   })
 

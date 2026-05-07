@@ -14,10 +14,12 @@ export type ListingRow = {
   productName: string
   productDescription: string
   status: Status
+  type: 'sale' | 'rent' | 'lease'
   views: number
   rentalCount: number
   daysRemaining: number | null
   imageBg: string
+  images: string[]
 }
 
 const tabs: { label: string; value: Tab }[] = [
@@ -85,25 +87,38 @@ export function ListingsClient({ listings }: { listings: ListingRow[] }) {
                 key={listing.id}
                 className="bg-card border-border overflow-hidden rounded-2xl border"
               >
-                {/* Image placeholder */}
-                <div className={`h-44 w-full bg-linear-to-br ${listing.imageBg} relative`}>
-                  <div
-                    className="absolute inset-0 opacity-20"
-                    style={{
-                      backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)',
-                      backgroundSize: '18px 18px',
-                    }}
-                  />
+                {/* Product image */}
+                <div className={`relative h-44 w-full overflow-hidden bg-linear-to-br ${listing.imageBg}`}>
+                  {listing.images[0] ? (
+                    <img
+                      src={listing.images[0]}
+                      alt={listing.productName}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="absolute inset-0 opacity-20"
+                      style={{
+                        backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)',
+                        backgroundSize: '18px 18px',
+                      }}
+                    />
+                  )}
                 </div>
 
                 {/* Content */}
                 <div className="space-y-3 p-4">
                   <div>
-                    <span
-                      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.bg} ${status.text} mb-2`}
-                    >
-                      {status.label}
-                    </span>
+                    <div className="mb-2 flex items-center gap-1.5">
+                      <span
+                        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.bg} ${status.text}`}
+                      >
+                        {status.label}
+                      </span>
+                      <span className="bg-stone/10 text-stone inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize">
+                        {listing.type}
+                      </span>
+                    </div>
                     <h2 className="text-charcoal text-base font-bold">{listing.productName}</h2>
                     <p className="text-stone mt-0.5 text-sm">{listing.productDescription}</p>
                   </div>
@@ -143,9 +158,12 @@ export function ListingsClient({ listings }: { listings: ListingRow[] }) {
                         <Upload className="h-4 w-4" />
                         Publish
                       </button>
-                      <button className="border-border flex h-10 w-10 items-center justify-center rounded-xl border">
+                      <Link
+                        href={`/artisan/list/${listing.id}/edit`}
+                        className="border-border flex h-10 w-10 items-center justify-center rounded-xl border"
+                      >
                         <Pencil className="text-stone h-4 w-4" />
-                      </button>
+                      </Link>
                       <Link
                         href="/artisan/list/new"
                         className="border-border text-stone flex h-10 items-center gap-1.5 rounded-xl border px-3 text-sm font-semibold"
@@ -155,10 +173,13 @@ export function ListingsClient({ listings }: { listings: ListingRow[] }) {
                       </Link>
                     </div>
                   ) : (
-                    <button className="border-forest/40 text-forest flex w-full items-center justify-center gap-1.5 rounded-xl border py-2.5 text-sm font-semibold">
+                    <Link
+                      href={`/artisan/list/${listing.id}/edit`}
+                      className="border-forest/40 text-forest flex w-full items-center justify-center gap-1.5 rounded-xl border py-2.5 text-sm font-semibold"
+                    >
                       <Pencil className="h-4 w-4" />
-                      Edit Insights
-                    </button>
+                      Edit Listing
+                    </Link>
                   )}
                 </div>
               </div>

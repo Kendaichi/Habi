@@ -6,7 +6,7 @@ import { Upload, ArrowLeft, Recycle, Wrench, Building2, CheckCircle } from 'luci
 import { TopNav } from '@/components/artisan/TopNav'
 import { BottomNav } from '@/components/artisan/BottomNav'
 import { readDraft, clearDraft } from '../draft'
-import { publishListing } from '../actions'
+import { publishListing, saveDraftListing } from '../actions'
 import type { ListingDraft } from '../draft'
 import type { LucideIcon } from 'lucide-react'
 
@@ -56,6 +56,7 @@ export default function NewListingReviewPage() {
   const [agreed, setAgreed] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [draft, setDraft] = useState<Partial<ListingDraft>>({})
+  const [actionError, setActionError] = useState<string | null>(null)
 
   useEffect(() => {
     setDraft(readDraft())
@@ -70,14 +71,44 @@ export default function NewListingReviewPage() {
 
   function handlePublish() {
     if (!canPublish) return
-    startTransition(() => {
-      clearDraft()
-      return publishListing({
-        name: draft.name!,
-        description: draft.description ?? '',
-        materialType: draft.materialType!,
-        listings: draft.listings!,
-      })
+    setActionError(null)
+    const data = {
+      name: draft.name!,
+      description: draft.description ?? '',
+      materialType: draft.materialType!,
+      images: draft.images ?? [],
+      listings: draft.listings!,
+    }
+    startTransition(async () => {
+      try {
+        clearDraft()
+        await publishListing(data)
+      } catch {
+        // Restore draft so the user can retry
+        setDraft(data)
+        setActionError('Failed to publish listing. Please try again.')
+      }
+    })
+  }
+
+  function handleSaveDraft() {
+    if (!draft.name || !draft.materialType) return
+    setActionError(null)
+    const data = {
+      name: draft.name!,
+      description: draft.description ?? '',
+      materialType: draft.materialType!,
+      images: draft.images ?? [],
+      listings: draft.listings ?? [],
+    }
+    startTransition(async () => {
+      try {
+        clearDraft()
+        await saveDraftListing(data)
+      } catch {
+        setDraft(data)
+        setActionError('Failed to save draft. Please try again.')
+      }
     })
   }
 
@@ -229,7 +260,10 @@ export default function NewListingReviewPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+        {actionError && (
+          <p className="text-terracotta mt-8 text-center text-sm font-medium">{actionError}</p>
+        )}
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
           <button
             onClick={handlePublish}
             disabled={!canPublish || isPending}
@@ -238,12 +272,13 @@ export default function NewListingReviewPage() {
             <Upload className="h-4 w-4" />
             {isPending ? 'Publishing…' : 'Publish Listing'}
           </button>
-          <Link
-            href="/artisan/list"
-            className="border-forest text-forest hover:bg-forest/5 flex items-center justify-center gap-2 rounded-full border-2 px-8 py-4 text-sm font-semibold transition-colors sm:w-auto"
+          <button
+            onClick={handleSaveDraft}
+            disabled={!draft.name || !draft.materialType || isPending}
+            className="border-forest text-forest hover:bg-forest/5 flex items-center justify-center gap-2 rounded-full border-2 px-8 py-4 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
           >
             Save Draft
-          </Link>
+          </button>
         </div>
 
         <div className="mt-6">
