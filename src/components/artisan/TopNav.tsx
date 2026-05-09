@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Bell, ShoppingCart, X, Trash2 } from 'lucide-react'
+import { Bell, ShoppingCart, X, Trash2, SendHorizonal } from 'lucide-react'
 import Link from 'next/link'
 import { useCart } from '@/context/CartContext'
 
@@ -10,21 +10,47 @@ interface TopNavProps {
   profileImage?: string | null
 }
 
-export function TopNav({ profileImage }: TopNavProps) {
-  const { items, removeItem, clearCart } = useCart()
-  const [drawerOpen, setDrawerOpen] = useState(false)
+type CheckoutState = 'idle' | 'loading' | 'success' | 'error'
 
-  const byHub = items.reduce<Record<string, { hubName: string; items: typeof items }>>((acc, item) => {
-    if (!acc[item.hubId]) acc[item.hubId] = { hubName: item.hubName, items: [] }
-    acc[item.hubId].items.push(item)
-    return acc
-  }, {})
+export function TopNav({ profileImage }: TopNavProps) {
+  const { items, removeItem, clearCart, checkout } = useCart()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [notes, setNotes] = useState('')
+  const [checkoutState, setCheckoutState] = useState<CheckoutState>('idle')
+
+  const byHub = items.reduce<Record<string, { hubName: string; items: typeof items }>>(
+    (acc, item) => {
+      if (!acc[item.hubId]) acc[item.hubId] = { hubName: item.hubName, items: [] }
+      acc[item.hubId].items.push(item)
+      return acc
+    },
+    {},
+  )
+
+  async function handleCheckout() {
+    setCheckoutState('loading')
+    try {
+      await checkout(notes.trim() || undefined)
+      setCheckoutState('success')
+      setNotes('')
+    } catch {
+      setCheckoutState('error')
+    }
+  }
+
+  function handleClose() {
+    setDrawerOpen(false)
+    if (checkoutState === 'success') setCheckoutState('idle')
+  }
 
   return (
     <>
       <header className="bg-cream border-stone/20 sticky top-0 z-50 flex w-full items-center justify-between border-b px-6 py-3">
         <div className="flex items-center gap-3">
-          <Link href="/shared/profile" className="border-forest/30 relative block h-10 w-10 overflow-hidden rounded-full border-2">
+          <Link
+            href="/shared/profile"
+            className="border-forest/30 relative block h-10 w-10 overflow-hidden rounded-full border-2"
+          >
             <Image
               alt="User Profile"
               src={profileImage ?? '/Habi_Logo.png'}
@@ -62,7 +88,7 @@ export function TopNav({ profileImage }: TopNavProps) {
       {drawerOpen && (
         <div
           className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
-          onClick={() => setDrawerOpen(false)}
+          onClick={handleClose}
         />
       )}
 
@@ -83,7 +109,7 @@ export function TopNav({ profileImage }: TopNavProps) {
             )}
           </div>
           <button
-            onClick={() => setDrawerOpen(false)}
+            onClick={handleClose}
             className="text-stone hover:text-charcoal rounded-full p-1"
           >
             <X className="h-5 w-5" />
@@ -91,13 +117,29 @@ export function TopNav({ profileImage }: TopNavProps) {
         </div>
 
         <div className="flex h-[calc(100%-56px)] flex-col overflow-y-auto p-5">
-          {items.length === 0 ? (
+          {items.length === 0 && checkoutState !== 'success' ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
               <ShoppingCart className="text-stone/40 h-12 w-12" />
               <p className="text-stone text-sm font-semibold">Your quote is empty</p>
               <p className="text-stone/70 text-xs">
                 Add materials from any hub to build your quote.
               </p>
+            </div>
+          ) : checkoutState === 'success' ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+              <div className="bg-forest/10 flex h-16 w-16 items-center justify-center rounded-full">
+                <SendHorizonal className="text-forest h-8 w-8" />
+              </div>
+              <p className="text-forest text-sm font-bold">Quote Request Sent!</p>
+              <p className="text-stone/70 text-xs leading-relaxed">
+                Your quote has been submitted. Contact each hub directly to confirm availability.
+              </p>
+              <button
+                onClick={handleClose}
+                className="bg-forest text-cream mt-2 rounded-xl px-6 py-2.5 text-xs font-semibold"
+              >
+                Done
+              </button>
             </div>
           ) : (
             <>
@@ -136,9 +178,34 @@ export function TopNav({ profileImage }: TopNavProps) {
                 <p className="text-stone text-[10px] leading-relaxed">
                   Contact each hub directly to confirm availability and pricing before reserving.
                 </p>
+
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add notes to your quote (optional)..."
+                  rows={2}
+                  className="border-stone/20 text-charcoal placeholder:text-stone/50 w-full resize-none rounded-xl border px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-forest/40"
+                />
+
+                {checkoutState === 'error' && (
+                  <p className="text-red-500 text-[10px] font-semibold">
+                    Something went wrong. Please try again.
+                  </p>
+                )}
+
+                <button
+                  onClick={handleCheckout}
+                  disabled={checkoutState === 'loading'}
+                  className="bg-forest text-cream flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-semibold transition-opacity disabled:opacity-60"
+                >
+                  <SendHorizonal className="h-3.5 w-3.5" />
+                  {checkoutState === 'loading' ? 'Sending...' : 'Send Quote Request'}
+                </button>
+
                 <button
                   onClick={clearCart}
-                  className="text-stone hover:text-red-600 flex w-full items-center justify-center gap-2 rounded-xl border py-2.5 text-xs font-semibold transition-colors"
+                  disabled={checkoutState === 'loading'}
+                  className="text-stone hover:text-red-600 flex w-full items-center justify-center gap-2 rounded-xl border py-2.5 text-xs font-semibold transition-colors disabled:opacity-50"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   Clear Quote
