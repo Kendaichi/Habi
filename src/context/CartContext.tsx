@@ -7,7 +7,7 @@ import {
   removeCartItem as removeCartItemAction,
   clearCartItems,
   checkoutCart,
-} from '@/app/artisan/materials/cart/actions'
+} from '@/lib/artisan-cart'
 
 export type CartItem = {
   materialId: string
