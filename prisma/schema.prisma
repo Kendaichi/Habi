@@ -18,6 +18,8 @@ model User {
   customRequestsAsBuyer   CustomRequest[]     @relation("BuyerRequests")
   orders                  Order[]
   products                Product[]
+  quoteCartItems          QuoteCartItem[]
+  quoteRequests           QuoteRequest[]
   rentals                 Rental[]
   rooms                   Room[]
   roomScans               RoomScan[]
@@ -173,6 +175,50 @@ model MaterialRequest {
   photoUrl     String?
   status       RequestStatus @default(PENDING)
   createdAt    DateTime      @default(now())
+}
+
+model QuoteCartItem {
+  id         String   @id @default(cuid())
+  artisanId  String
+  materialId String
+  type       String
+  quantityKg Float
+  pricePerKg Float
+  hubId      String
+  hubName    String
+  createdAt  DateTime @default(now())
+  artisan    User     @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+
+  @@unique([artisanId, materialId])
+}
+
+model QuoteRequest {
+  id        String             @id @default(cuid())
+  artisanId String
+  status    QuoteRequestStatus @default(PENDING)
+  notes     String?
+  createdAt DateTime           @default(now())
+  artisan   User               @relation(fields: [artisanId], references: [id])
+  items     QuoteRequestItem[]
+}
+
+model QuoteRequestItem {
+  id             String       @id @default(cuid())
+  quoteRequestId String
+  materialId     String
+  type           String
+  quantityKg     Float
+  pricePerKg     Float
+  hubId          String
+  hubName        String
+  quoteRequest   QuoteRequest @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+}
+
+enum QuoteRequestStatus {
+  PENDING
+  SENT
+  ACCEPTED
+  REJECTED
 }
 
 enum Role {
