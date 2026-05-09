@@ -68,3 +68,22 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+## 5. Project Folder Conventions
+
+Where code lives in this project:
+
+| Folder | What goes here |
+|---|---|
+| `src/lib/` | Server-side helpers and service wrappers. Examples: `auth.ts` (requireRole, getCurrentUserProfile), `prisma.ts`, `storage.ts` (uploadFile), `junkshop.ts` (getCurrentJunkShop), `room-service.ts`. |
+| `src/utils/` | Pure, side-effect-free utility functions and shared constants. Examples: `material-styles.ts` (MATERIAL_BG, MATERIAL_STYLE), `cn()` is in `lib/utils.ts`. |
+| `src/types/` | Shared TypeScript types and interfaces. Subdirectories: `server/` (Handler, Route), `room/`. Inline page-local types can stay in their file. |
+| `src/api/` | Next.js API route handlers for external-facing endpoints (called by client-side fetch or third parties). Current routes: `room/generate`, `room/world`. Mutations that are only called from the app use server actions instead. |
+| `src/app/**/actions.ts` | Server actions (`'use server'`) for mutations tied to a specific route. Should use `requireRole()` on every action — never hardcode user IDs. |
+| `src/app/**/page.tsx` | Page components only. Data fetching via Prisma is fine here for server components. Extract logic to `lib/` when it's reused across 2+ pages. |
+
+**Key rules:**
+- Never hardcode user/entity IDs in server actions — always derive from `requireRole()`.
+- Duplicate Supabase upload logic → `src/lib/storage.ts` (`uploadFile`).
+- Duplicate shop lookup pattern → `src/lib/junkshop.ts` (`getCurrentJunkShop`).
+- Duplicate material color/style maps → `src/utils/material-styles.ts`.

@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { Role } from '@/generated/prisma/enums'
 import { requireRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getCurrentJunkShop } from '@/lib/junkshop'
 
 export async function logMaterial(formData: FormData) {
   const user = await requireRole(Role.JUNKSHOP)
@@ -13,10 +14,7 @@ export async function logMaterial(formData: FormData) {
 
   if (!type || isNaN(quantityKg) || quantityKg <= 0 || isNaN(pricePerKg) || pricePerKg <= 0) return
 
-  const shop =
-    (await prisma.junkShop.findFirst({
-      where: { name: { contains: user.name, mode: 'insensitive' } },
-    })) ?? (await prisma.junkShop.findFirst())
+  const shop = await getCurrentJunkShop(user.name)
 
   if (!shop) return
 

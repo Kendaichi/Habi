@@ -2,14 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { ReturnsClient, type ReturnRow } from './ReturnsClient'
 import { RefurbStatus, Role } from '@/generated/prisma/enums'
 import { requireRole } from '@/lib/auth'
-
-const MATERIAL_BG: Record<string, string> = {
-  Plastic: 'from-[#A0B4C8] to-[#6080A0]',
-  Metal: 'from-[#C8A882] to-[#9C7A5A]',
-  Bamboo: 'from-[#8FAF8A] to-[#4A7A5A]',
-  Textile: 'from-[#BFA9A0] to-[#8A6E65]',
-}
-const DEFAULT_BG = 'from-[#C0C8D0] to-[#808890]'
+import { MATERIAL_BG, DEFAULT_BG } from '@/utils/material-styles'
 
 type RentalFull = {
   id: string
