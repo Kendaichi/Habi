@@ -6,8 +6,6 @@ import { requireRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { ListingType, ListingStatus } from '@/generated/prisma/client'
 
-const ARTISAN_ID = 'user-artisan-sitti'
-
 export async function saveDraftListing({
   name,
   description,
@@ -21,13 +19,14 @@ export async function saveDraftListing({
   images: string[]
   listings: { type: string; price: number }[]
 }) {
+  const artisan = await requireRole(Role.ARTISAN)
   const product = await prisma.product.create({
     data: {
       name,
       description,
       materialType,
       images,
-      artisanId: ARTISAN_ID,
+      artisanId: artisan.id,
     },
   })
 
@@ -58,14 +57,14 @@ export async function publishListing({
   images: string[]
   listings: { type: string; price: number }[]
 }) {
-  await requireRole(Role.ARTISAN)
+  const artisan = await requireRole(Role.ARTISAN)
   const product = await prisma.product.create({
     data: {
       name,
       description,
       materialType,
       images,
-      artisanId: ARTISAN_ID,
+      artisanId: artisan.id,
     },
   })
 

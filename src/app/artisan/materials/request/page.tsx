@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { ArrowLeft, ChevronDown, Upload, Info, Send, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { BottomNav } from '@/components/artisan/BottomNav'
-import { supabase } from '@/lib/supabase'
+import { uploadFile } from '@/lib/storage'
 import { submitMaterialRequest } from './actions'
 
 const BUCKET = 'material-requests'
@@ -44,17 +44,7 @@ export default function RequestMaterialPage() {
     e.preventDefault()
     setUploading(true)
 
-    let photoUrl: string | undefined
-
-    if (file && supabase) {
-      const ext = file.name.split('.').pop() ?? 'jpg'
-      const path = `${crypto.randomUUID()}.${ext}`
-      const { error } = await supabase.storage.from(BUCKET).upload(path, file)
-      if (!error) {
-        const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
-        photoUrl = data.publicUrl
-      }
-    }
+    const photoUrl = file ? (await uploadFile(file, BUCKET)) ?? undefined : undefined
 
     setUploading(false)
     startTransition(() =>

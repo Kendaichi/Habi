@@ -1,14 +1,12 @@
 import { Role } from '@/generated/prisma/enums'
 import { requireRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getCurrentJunkShop } from '@/lib/junkshop'
 import { InventoryClient, type MaterialRow } from './InventoryClient'
 
 export default async function InventoryListPage() {
   const user = await requireRole(Role.JUNKSHOP)
-  const shop =
-    (await prisma.junkShop.findFirst({
-      where: { name: { contains: user.name, mode: 'insensitive' } },
-    })) ?? (await prisma.junkShop.findFirst())
+  const shop = await getCurrentJunkShop(user.name)
 
   const materials = await prisma.material.findMany({
     where: shop ? { junkShopId: shop.id } : { id: '__missing__' },

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import { Camera, Image as ImageIcon, Sun, ZoomIn, Layers, Info, ArrowRight, Loader2 } from 'lucide-react'
 import { TopNav } from '@/components/artisan/TopNav'
 import { BottomNav } from '@/components/artisan/BottomNav'
-import { supabase } from '@/lib/supabase'
+import { uploadFile } from '@/lib/storage'
 import { saveDraft } from './draft'
 
 const BUCKET = 'product-images'
@@ -53,27 +53,9 @@ export default function NewListingStep1Page() {
     }
 
     setUploading(true)
-    const urls: string[] = []
-
     try {
-      if (!supabase) {
-        saveDraft({ images: [] })
-        router.push('/artisan/list/new/materials')
-        return
-      }
-
-      for (const file of files) {
-        const ext = file.name.split('.').pop() ?? 'jpg'
-        const path = `pending/${crypto.randomUUID()}.${ext}`
-        const { error } = await supabase.storage.from(BUCKET).upload(path, file)
-        if (error) {
-          console.error('Upload error:', error)
-          continue
-        }
-        const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
-        urls.push(data.publicUrl)
-      }
-
+      const settled = await Promise.all(files.map((f) => uploadFile(f, BUCKET, 'pending')))
+      const urls = settled.filter((u): u is string => u !== null)
       saveDraft({ images: urls })
       router.push('/artisan/list/new/materials')
     } catch (err) {

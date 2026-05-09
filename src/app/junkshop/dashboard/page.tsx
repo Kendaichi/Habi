@@ -6,56 +6,12 @@ import { DashboardSection } from '@/components/shared/DashboardSection'
 import { Role } from '@/generated/prisma/enums'
 import { requireRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-
-const MATERIAL_STYLE: Record<
-  string,
-  { borderColor: string; iconBg: string; emoji: string; sub: string }
-> = {
-  Plastic: {
-    borderColor: 'border-terracotta',
-    iconBg: 'bg-terracotta/10',
-    emoji: '🧴',
-    sub: 'HDPE & PET Bottles',
-  },
-  Metal: {
-    borderColor: 'border-forest',
-    iconBg: 'bg-forest/10',
-    emoji: '⚙️',
-    sub: 'Aluminum & Scrap Iron',
-  },
-  Bamboo: {
-    borderColor: 'border-mustard',
-    iconBg: 'bg-mustard/10',
-    emoji: '🌿',
-    sub: 'Bamboo & Timber Offcuts',
-  },
-  Textile: {
-    borderColor: 'border-stone-400',
-    iconBg: 'bg-stone-100',
-    emoji: '🧵',
-    sub: 'Fabric & Fiber Waste',
-  },
-  Glass: {
-    borderColor: 'border-sky-400',
-    iconBg: 'bg-sky-50',
-    emoji: '🫙',
-    sub: 'Glass Cullet',
-  },
-}
-
-const DEFAULT_STYLE = {
-  borderColor: 'border-stone-300',
-  iconBg: 'bg-stone-100',
-  emoji: '📦',
-  sub: 'General Material',
-}
+import { getCurrentJunkShop } from '@/lib/junkshop'
+import { MATERIAL_STYLE, DEFAULT_STYLE } from '@/utils/material-styles'
 
 export default async function JunkshopDashboardPage() {
   const user = await requireRole(Role.JUNKSHOP)
-  const shopMatch =
-    (await prisma.junkShop.findFirst({
-      where: { name: { contains: user.name, mode: 'insensitive' } },
-    })) ?? (await prisma.junkShop.findFirst())
+  const shopMatch = await getCurrentJunkShop(user.name)
 
   const shop = shopMatch
     ? await prisma.junkShop.findUnique({
