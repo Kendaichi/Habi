@@ -9,7 +9,7 @@ export default async function BuyerHomePage() {
 
   return (
     <BuyerScreenShell title="Habi" eyebrow="Buyer">
-      <p className="text-forest text-xs font-semibold uppercase tracking-[0.24em]">Elevated Craft</p>
+      <p className="text-forest text-xs font-semibold uppercase tracking-[0.24em]">Habi</p>
       <h1 className="font-heading text-charcoal mt-3 text-5xl font-semibold leading-tight">
         Discover your next artisan piece
       </h1>

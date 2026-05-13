@@ -96,7 +96,7 @@ export default function RoleSelectPage() {
       <header className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
           <Image src="/Habi_Logo.png" alt="Habi" width={28} height={28} className="rounded-lg" />
-          <span className="font-heading text-forest text-lg font-bold">Elevated Craft</span>
+          <span className="font-heading text-forest text-lg font-bold">Habi</span>
         </div>
         <Link
           href="/onboarding/signin"

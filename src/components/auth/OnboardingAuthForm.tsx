@@ -128,7 +128,7 @@ export function OnboardingAuthForm({ mode, initialRole }: OnboardingAuthFormProp
           height={56}
           className="mb-4 rounded-2xl"
         />
-        <h1 className="font-heading text-forest text-3xl font-bold">Elevated Craft</h1>
+        <h1 className="font-heading text-forest text-3xl font-bold">Habi</h1>
         <p className="text-stone mt-1 text-sm">Honoring Mindanao&apos;s artisan heritage.</p>
       </div>
 
