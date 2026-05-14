@@ -53,7 +53,7 @@ export default async function ArtisanDemandPage() {
     <div className="bg-cream min-h-screen">
       <TopNav />
 
-      <div className="space-y-6 px-5 pt-6 pb-28">
+      <div className="mx-auto max-w-2xl space-y-6 px-5 pt-6 pb-28 sm:px-6">
         {/* Hero Demand Signal */}
         <section className="bg-forest relative overflow-hidden rounded-3xl p-6">
           <div className="absolute top-0 right-0 -mt-16 -mr-16 h-48 w-48 rounded-full bg-cream/5 blur-3xl" />

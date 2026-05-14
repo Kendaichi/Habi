@@ -10,7 +10,7 @@ export default async function BuyerHomePage() {
   return (
     <BuyerScreenShell title="Habi" eyebrow="Buyer">
       <p className="text-forest text-xs font-semibold uppercase tracking-[0.24em]">Habi</p>
-      <h1 className="font-heading text-charcoal mt-3 text-5xl font-semibold leading-tight">
+      <h1 className="font-heading text-charcoal mt-3 text-4xl font-semibold leading-tight sm:text-5xl">
         Discover your next artisan piece
       </h1>
       <p className="text-stone mt-4 text-base leading-relaxed">
@@ -23,7 +23,7 @@ export default async function BuyerHomePage() {
       >
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cream/70">AI Room</p>
-          <p className="font-heading mt-2 text-3xl font-semibold">Visualize before you buy</p>
+          <p className="font-heading mt-2 text-2xl font-semibold sm:text-3xl">Visualize before you buy</p>
         </div>
         <Sparkles className="h-7 w-7 shrink-0" />
       </Link>

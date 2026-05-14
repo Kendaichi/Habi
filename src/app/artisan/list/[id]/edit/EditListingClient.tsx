@@ -249,7 +249,7 @@ export function EditListingClient({
     <div className="bg-cream min-h-screen">
       <TopNav />
 
-      <div className="space-y-10 px-5 pt-6 pb-32">
+      <div className="mx-auto max-w-2xl space-y-10 px-5 pt-6 pb-32 sm:px-6">
         {/* Header */}
         <div>
           <Link

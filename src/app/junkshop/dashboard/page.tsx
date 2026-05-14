@@ -86,39 +86,39 @@ export default async function JunkshopDashboardPage() {
         </div>
 
         {/* Stats Bento Grid */}
-        <div className="mb-8 grid grid-cols-3 gap-3">
-          <div className="bg-card border-border flex h-36 flex-col justify-between rounded-2xl border p-4 shadow-sm">
-            <span className="text-stone text-[10px] font-bold uppercase tracking-wide">
+        <div className="mb-8 grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="bg-card border-border flex flex-col justify-between rounded-2xl border p-3 shadow-sm sm:p-4">
+            <span className="text-stone text-[9px] font-bold uppercase tracking-wide sm:text-[10px]">
               Sorted This Month
             </span>
-            <div className="flex items-end justify-between">
-              <span className="font-heading text-forest text-3xl font-bold">
+            <div className="mt-2 flex items-end justify-between">
+              <span className="font-heading text-forest text-xl font-bold sm:text-3xl">
                 {totalTons}
-                <span className="text-stone ml-1 text-base font-normal">tons</span>
+                <span className="text-stone ml-0.5 text-xs font-normal sm:ml-1 sm:text-base">tons</span>
               </span>
-              <Recycle className="text-forest/20 h-10 w-10" />
+              <Recycle className="text-forest/20 hidden h-10 w-10 sm:block" />
             </div>
           </div>
 
-          <div className="bg-card border-border flex h-36 flex-col justify-between rounded-2xl border p-4 shadow-sm">
-            <span className="text-stone text-[10px] font-bold uppercase tracking-wide">
+          <div className="bg-card border-border flex flex-col justify-between rounded-2xl border p-3 shadow-sm sm:p-4">
+            <span className="text-stone text-[9px] font-bold uppercase tracking-wide sm:text-[10px]">
               Artisans Served
             </span>
-            <div className="flex items-end justify-between">
-              <span className="font-heading text-forest text-3xl font-bold">{artisansServed}</span>
-              <Users className="text-forest/20 h-10 w-10" />
+            <div className="mt-2 flex items-end justify-between">
+              <span className="font-heading text-forest text-xl font-bold sm:text-3xl">{artisansServed}</span>
+              <Users className="text-forest/20 hidden h-10 w-10 sm:block" />
             </div>
           </div>
 
-          <div className="bg-card border-border flex h-36 flex-col justify-between rounded-2xl border p-4 shadow-sm">
-            <span className="text-stone text-[10px] font-bold uppercase tracking-wide">
+          <div className="bg-card border-border flex flex-col justify-between rounded-2xl border p-3 shadow-sm sm:p-4">
+            <span className="text-stone text-[9px] font-bold uppercase tracking-wide sm:text-[10px]">
               Pickup Requests
             </span>
-            <div className="flex items-end justify-between">
-              <span className="font-heading text-terracotta text-3xl font-bold">
+            <div className="mt-2 flex items-end justify-between">
+              <span className="font-heading text-terracotta text-xl font-bold sm:text-3xl">
                 {pickupRequests}
               </span>
-              <Truck className="text-terracotta/20 h-10 w-10" />
+              <Truck className="text-terracotta/20 hidden h-10 w-10 sm:block" />
             </div>
           </div>
         </div>

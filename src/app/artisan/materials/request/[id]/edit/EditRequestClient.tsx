@@ -87,7 +87,7 @@ export function EditRequestClient({ request }: { request: RequestData }) {
         <div className="w-9" />
       </header>
 
-      <div className="px-5 pt-6">
+      <div className="mx-auto max-w-2xl px-5 pt-6 sm:px-6">
         <form
           onSubmit={handleSubmit}
           className="border-border space-y-6 rounded-3xl border bg-white p-6 shadow-sm"

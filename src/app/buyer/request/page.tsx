@@ -12,7 +12,7 @@ export default async function BuyerRequestPage() {
         <p className="text-forest text-xs font-semibold uppercase tracking-[0.24em]">
           Custom Request
         </p>
-        <h1 className="font-heading mt-2 text-5xl font-semibold leading-tight text-charcoal">
+        <h1 className="font-heading mt-2 text-4xl font-semibold leading-tight text-charcoal sm:text-5xl">
           Build for your space
         </h1>
         <p className="mt-3 text-sm leading-relaxed text-stone">

@@ -78,7 +78,7 @@ export default async function ProductDetailPage({
       </Link>
 
       <article className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-[0_22px_58px_rgba(44,44,44,0.1)]">
-        <div className="relative h-96 bg-cover bg-center" style={{ backgroundImage: `url(${imageUrl})` }}>
+        <div className="relative h-64 bg-cover bg-center sm:h-96" style={{ backgroundImage: `url(${imageUrl})` }}>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(44,44,44,0.02)_20%,_rgba(44,44,44,0.52)_100%)]" />
           <Link
             href={`/buyer/room/image-design${listingOptions[0]?.listingId ? `?listingId=${listingOptions[0].listingId}` : ''}`}
@@ -92,7 +92,7 @@ export default async function ProductDetailPage({
           <p className="text-forest text-xs font-semibold uppercase tracking-[0.22em]">
             {product.materialType}
           </p>
-          <h1 className="font-heading mt-2 text-5xl leading-tight font-semibold text-charcoal">
+          <h1 className="font-heading mt-2 text-4xl leading-tight font-semibold text-charcoal sm:text-5xl">
             {product.name}
           </h1>
           <p className="mt-2 text-sm text-stone">by {product.artisan.name}</p>
@@ -124,7 +124,7 @@ export default async function ProductDetailPage({
           <p className="text-forest text-xs font-semibold uppercase tracking-[0.22em]">
             Community Voice
           </p>
-          <h2 className="font-heading mt-2 text-3xl font-semibold text-charcoal">
+          <h2 className="font-heading mt-2 text-2xl font-semibold text-charcoal sm:text-3xl">
             Crafted for everyday keeping
           </h2>
           <div className="mt-4 rounded-lg bg-cream p-4">

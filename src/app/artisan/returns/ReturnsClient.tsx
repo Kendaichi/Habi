@@ -85,7 +85,7 @@ export function ReturnsClient({ returns }: { returns: ReturnRow[] }) {
     <div className="bg-cream min-h-screen">
       <TopNav />
 
-      <div className="space-y-6 px-5 pt-6 pb-32">
+      <div className="mx-auto max-w-2xl space-y-6 px-5 pt-6 pb-32 sm:px-6">
         <div>
           <h1 className="font-heading text-charcoal text-2xl font-bold">Returns Management</h1>
           <p className="text-stone mt-1.5 text-sm leading-relaxed">

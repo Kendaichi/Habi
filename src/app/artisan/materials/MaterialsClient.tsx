@@ -111,7 +111,7 @@ export function MaterialsClient({ hubs, requests }: { hubs: HubRow[]; requests: 
     <div className="bg-cream min-h-screen">
       <TopNav />
 
-      <div className="space-y-6 px-5 pt-6 pb-28">
+      <div className="mx-auto max-w-2xl space-y-6 px-5 pt-6 pb-28 sm:px-6">
         {/* Search hero */}
         <section className="bg-forest rounded-3xl p-6">
           <h2 className="font-heading text-cream mb-5 text-2xl font-bold">Find Local Materials</h2>

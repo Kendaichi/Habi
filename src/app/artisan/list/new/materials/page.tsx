@@ -97,7 +97,7 @@ export default function NewListingMaterialsPage() {
     <div className="bg-cream min-h-screen">
       <TopNav />
 
-      <div className="space-y-6 px-5 pt-6 pb-32">
+      <div className="mx-auto max-w-2xl space-y-6 px-5 pt-6 pb-32 sm:px-6">
         {/* Progress */}
         <div>
           <div className="mb-2 flex items-center justify-between">

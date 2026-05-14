@@ -33,7 +33,7 @@ export default async function BuyerOrdersPage() {
   return (
     <BuyerScreenShell title="My Journey" eyebrow="Orders">
       <p className="text-forest text-xs font-semibold uppercase tracking-[0.24em]">My Journey</p>
-      <h1 className="font-heading mt-3 text-5xl font-semibold text-charcoal">Orders & Rentals</h1>
+      <h1 className="font-heading mt-3 text-4xl font-semibold text-charcoal sm:text-5xl">Orders & Rentals</h1>
       <p className="mt-4 text-base leading-relaxed text-stone">
         Keep track of active purchases, rental timelines, and the impact tied to every piece.
       </p>
@@ -44,7 +44,7 @@ export default async function BuyerOrdersPage() {
 
       <section className="mt-6 space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-heading text-3xl font-semibold text-charcoal">Active Rentals</h2>
+          <h2 className="font-heading text-2xl font-semibold text-charcoal sm:text-3xl">Active Rentals</h2>
           <Link href="/shared/impact" className="text-sm font-semibold text-terracotta">
             Impact report
           </Link>
@@ -58,7 +58,7 @@ export default async function BuyerOrdersPage() {
       </section>
 
       <section className="mt-8 space-y-3">
-        <h2 className="font-heading text-3xl font-semibold text-charcoal">Purchases</h2>
+        <h2 className="font-heading text-2xl font-semibold text-charcoal sm:text-3xl">Purchases</h2>
         {orders.length > 0 ? (
           orders.map((order) => (
             <OrderCard

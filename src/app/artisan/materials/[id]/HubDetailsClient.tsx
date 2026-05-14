@@ -118,7 +118,7 @@ export function HubDetailsClient({ shop }: { shop: ShopData }) {
         <div className="w-9" />
       </header>
 
-      <div className="space-y-10 px-5 pt-6">
+      <div className="mx-auto max-w-2xl space-y-10 px-5 pt-6 sm:px-6">
         {/* Hero */}
         <section>
           {shop.image && (

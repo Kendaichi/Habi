@@ -10,7 +10,7 @@ type BuyerTopBarProps = {
 export function BuyerTopBar({ title = 'Habi', eyebrow }: BuyerTopBarProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-stone-200/70 bg-cream/90 px-5 py-3 backdrop-blur-md">
-      <div className="mx-auto flex max-w-md items-center justify-between gap-4">
+      <div className="mx-auto flex max-w-md items-center justify-between gap-4 sm:max-w-2xl">
         <Link href="/buyer/home" className="flex min-w-0 items-center gap-3">
           <Image
             src="/Habi_Logo.png"
