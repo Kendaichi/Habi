@@ -2,9 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { CalendarDays } from 'lucide-react'
 import { CheckoutOptionCard } from '@/components/buyer/CheckoutOptionCard'
 import { ImpactSummary } from '@/components/buyer/ImpactSummary'
 import { clearCart, getCartItems, getCartTotals, type BuyerCartItem } from '@/lib/buyer-cart'
+
+function toDateInputValue(d: Date) {
+  return d.toISOString().slice(0, 10)
+}
 
 const payments = [
   { label: 'GCash', description: 'Mobile wallet checkout for fast local payment.' },
@@ -23,6 +28,12 @@ export function CheckoutClient() {
   const [payment, setPayment] = useState(payments[0].label)
   const [deliveryMethod, setDeliveryMethod] = useState(delivery[0].label)
 
+  const today = new Date()
+  const defaultEnd = new Date(today)
+  defaultEnd.setMonth(defaultEnd.getMonth() + 1)
+  const [startDate, setStartDate] = useState(toDateInputValue(today))
+  const [endDate, setEndDate] = useState(toDateInputValue(defaultEnd))
+
   useEffect(() => {
     queueMicrotask(() => setItems(getCartItems()))
   }, [])
@@ -30,12 +41,16 @@ export function CheckoutClient() {
   const totals = getCartTotals(items)
   const shipping = items.length > 0 ? 180 : 0
   const total = totals.subtotal + shipping
+  const hasRental = items.some((i) => i.mode === 'RENT' || i.mode === 'LEASE')
 
   async function handleCheckout() {
     const response = await fetch('/api/buyer/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items }),
+      body: JSON.stringify({
+        items,
+        ...(hasRental ? { startDate, endDate } : {}),
+      }),
     })
 
     if (!response.ok) return
@@ -89,6 +104,44 @@ export function CheckoutClient() {
           ))}
         </div>
       </section>
+
+      {hasRental && (
+        <section className="rounded-lg border border-forest/20 bg-forest/5 p-5 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <CalendarDays className="h-5 w-5 text-forest" />
+            <h2 className="font-heading text-xl font-semibold text-charcoal">Rental Period</h2>
+          </div>
+          <p className="text-xs text-stone mb-4 leading-relaxed">
+            Set the start and return dates for your rental item(s).
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-stone uppercase tracking-wide mb-1">
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                min={toDateInputValue(today)}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-charcoal outline-none focus:border-forest focus:ring-1 focus:ring-forest"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-stone uppercase tracking-wide mb-1">
+                End Date
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                min={startDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2.5 text-sm text-charcoal outline-none focus:border-forest focus:ring-1 focus:ring-forest"
+              />
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="rounded-lg border border-stone-200 bg-white p-5 shadow-sm">
         <h2 className="font-heading text-3xl font-semibold text-charcoal">Order Summary</h2>

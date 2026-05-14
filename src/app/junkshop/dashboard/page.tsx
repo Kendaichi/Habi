@@ -1,4 +1,4 @@
-import { Recycle, Users, Truck, ArrowRight } from 'lucide-react'
+import { Recycle, Users, Truck, ArrowRight, ClipboardList } from 'lucide-react'
 import Link from 'next/link'
 import { TopNav } from '@/components/junkshop/TopNav'
 import { BottomNav } from '@/components/junkshop/BottomNav'
@@ -32,6 +32,15 @@ export default async function JunkshopDashboardPage() {
   const artisansServed = new Set(shop?.traceChains.map((c) => c.artisanId)).size
   const pickupRequests = shop?.traceChains.length ?? 0
 
+  const pendingQuoteCount = shop
+    ? await prisma.quoteRequest.count({
+        where: {
+          items: { some: { hubId: shop.id } },
+          status: { in: ['PENDING', 'SENT'] },
+        },
+      })
+    : 0
+
   const topMaterials = [...(shop?.materialsList ?? [])]
     .sort((a, b) => b.quantityKg - a.quantityKg)
     .slice(0, 3)
@@ -54,13 +63,25 @@ export default async function JunkshopDashboardPage() {
         </section>
 
         {/* Primary CTA */}
-        <div className="mb-8">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row">
           <Link
             href="/junkshop/inventory/log"
-            className="bg-terracotta flex w-full items-center justify-center gap-3 rounded-xl px-8 py-4 font-semibold text-white shadow-lg transition-all hover:opacity-90 active:scale-95 md:inline-flex md:w-auto"
+            className="bg-terracotta flex flex-1 items-center justify-center gap-3 rounded-xl px-8 py-4 font-semibold text-white shadow-lg transition-all hover:opacity-90 active:scale-95"
           >
             <span className="text-lg">+</span>
             Log New Sorted Material
+          </Link>
+          <Link
+            href="/junkshop/quotes"
+            className="border-forest text-forest flex flex-1 items-center justify-center gap-3 rounded-xl border-2 px-8 py-4 font-semibold transition-all hover:bg-forest/5 active:scale-95"
+          >
+            <ClipboardList className="h-5 w-5" />
+            Quote Requests
+            {pendingQuoteCount > 0 && (
+              <span className="bg-terracotta flex h-5 w-5 items-center justify-center rounded-full text-xs text-white">
+                {pendingQuoteCount}
+              </span>
+            )}
           </Link>
         </div>
 

@@ -24,3 +24,13 @@ export const DEFAULT_STYLE = {
   emoji: '📦',
   sub: 'General Material',
 }
+
+export const MATERIAL_WEIGHT_KG: Record<string, number> = {
+  Plastic: 0.5,
+  Metal: 2.0,
+  Bamboo: 1.5,
+  Textile: 0.8,
+  Glass: 1.2,
+}
+
+export const DEFAULT_WEIGHT_KG = 1.0

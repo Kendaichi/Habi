@@ -1,4 +1,9 @@
-export default function SupplierWastePage() {
+import { Role } from '@/generated/prisma/enums'
+import { requireRole } from '@/lib/auth'
+
+export default async function SupplierWastePage() {
+  await requireRole(Role.SUPPLIER)
+
   return (
     <div className="min-h-screen bg-cream p-6">
       <h1 className="font-heading text-2xl font-bold text-charcoal">Waste Inventory</h1>
