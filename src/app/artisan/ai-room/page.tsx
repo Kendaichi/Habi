@@ -69,7 +69,7 @@ export default function MySustainableSpacePage() {
     <div className="bg-cream min-h-screen">
       <TopNav />
 
-      <div className="space-y-8 px-5 pt-6 pb-28">
+      <div className="mx-auto max-w-2xl space-y-8 px-5 pt-6 pb-28 sm:px-6">
         {/* Hero */}
         <section>
           <p className="text-terracotta mb-1 text-[11px] font-bold tracking-[0.2em] uppercase">

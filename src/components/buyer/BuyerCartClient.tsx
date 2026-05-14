@@ -38,7 +38,7 @@ export function BuyerCartClient() {
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-forest/10 text-forest">
           <ShoppingBag className="h-8 w-8" />
         </div>
-        <h1 className="font-heading mt-5 text-4xl font-semibold text-charcoal">Your cart is open</h1>
+        <h1 className="font-heading mt-5 text-3xl font-semibold text-charcoal sm:text-4xl">Your cart is open</h1>
         <p className="mt-3 text-sm leading-relaxed text-stone">
           Add a buyer-ready Habi piece or bring in a room recommendation from AI Room.
         </p>
@@ -75,7 +75,7 @@ export function BuyerCartClient() {
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-stone">
               {totals.itemCount} item{totals.itemCount === 1 ? '' : 's'}
             </p>
-            <p className="text-3xl font-bold text-charcoal">
+            <p className="text-2xl font-bold text-charcoal sm:text-3xl">
               PHP {totals.subtotal.toLocaleString('en-PH')}
             </p>
           </div>

@@ -47,7 +47,7 @@ export default function NewListingDetailsPage() {
     <div className="bg-cream min-h-screen">
       <TopNav />
 
-      <div className="px-5 pt-6 pb-32">
+      <div className="mx-auto max-w-2xl px-5 pt-6 pb-32 sm:px-6">
         {/* Progress */}
         <div className="mb-6">
           <div className="mb-2 flex items-center justify-between">

@@ -69,7 +69,7 @@ export default function RequestMaterialPage() {
         <div className="w-9" />
       </header>
 
-      <div className="px-5 pt-6">
+      <div className="mx-auto max-w-2xl px-5 pt-6 sm:px-6">
         {/* Hero text */}
         <section className="mb-8">
           <h1 className="font-heading text-forest mb-2 text-3xl leading-tight font-bold">

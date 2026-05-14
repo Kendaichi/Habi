@@ -23,7 +23,7 @@ export function BuyerScreenShell({
       className={`min-h-screen bg-[linear-gradient(180deg,_#faf6f0_0%,_#fffaf6_44%,_#f4ece3_100%)] ${className}`}
     >
       {showTopBar ? <BuyerTopBar title={title} eyebrow={eyebrow} /> : null}
-      <main className="mx-auto max-w-md px-5 pt-6 pb-32">{children}</main>
+      <main className="mx-auto max-w-md px-5 pt-6 pb-32 sm:max-w-2xl sm:px-6">{children}</main>
       {showBottomNav ? <BuyerBottomNav /> : null}
     </div>
   )

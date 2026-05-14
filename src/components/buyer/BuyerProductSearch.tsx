@@ -45,7 +45,7 @@ export function BuyerProductSearch({ recommendations }: BuyerProductSearchProps)
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-forest text-xs font-semibold uppercase tracking-[0.22em]">Marketplace</p>
-          <h2 className="font-heading text-charcoal mt-2 text-3xl font-semibold">Search products</h2>
+          <h2 className="font-heading text-charcoal mt-2 text-2xl font-semibold sm:text-3xl">Search products</h2>
         </div>
         <p className="text-stone text-sm">{filteredRecommendations.length} shown</p>
       </div>
@@ -70,7 +70,7 @@ export function BuyerProductSearch({ recommendations }: BuyerProductSearchProps)
         ) : null}
       </div>
 
-      <div className="mt-5 space-y-4">
+      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
         {filteredRecommendations.map((recommendation) => (
           <Link
             key={recommendation.listingId}
@@ -78,19 +78,19 @@ export function BuyerProductSearch({ recommendations }: BuyerProductSearchProps)
             className="block overflow-hidden rounded-lg border border-stone-200 bg-white shadow-[0_18px_44px_rgba(44,44,44,0.08)]"
           >
             <div
-              className="h-52 bg-cover bg-center"
+              className="h-48 bg-cover bg-center sm:h-52"
               style={{ backgroundImage: `url(${recommendation.imageUrl})` }}
             />
-            <div className="p-5">
+            <div className="p-4 sm:p-5">
               <p className="text-forest text-[11px] font-semibold uppercase tracking-[0.22em]">
                 {recommendation.materialType}
               </p>
-              <h3 className="font-heading text-charcoal mt-2 text-3xl font-semibold">
+              <h3 className="font-heading text-charcoal mt-2 text-xl font-semibold sm:text-2xl">
                 {recommendation.productName}
               </h3>
               <p className="text-stone mt-2 text-sm">by {recommendation.artisanName}</p>
               <div className="mt-4 flex items-center justify-between gap-3">
-                <p className="text-charcoal text-2xl font-semibold">
+                <p className="text-charcoal text-xl font-semibold sm:text-2xl">
                   PHP {recommendation.price.toLocaleString('en-PH')}
                 </p>
                 <span className="text-terracotta inline-flex items-center gap-1 text-sm font-semibold">

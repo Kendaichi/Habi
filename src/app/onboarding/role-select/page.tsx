@@ -92,8 +92,8 @@ export default function RoleSelectPage() {
   }
 
   return (
-    <div className="bg-cream flex min-h-screen flex-col">
-      <header className="flex items-center justify-between px-6 py-4">
+    <div className="bg-cream flex min-h-screen flex-col items-center">
+      <header className="flex w-full max-w-lg items-center justify-between px-6 py-4">
         <div className="flex items-center gap-2">
           <Image src="/Habi_Logo.png" alt="Habi" width={28} height={28} className="rounded-lg" />
           <span className="font-heading text-forest text-lg font-bold">Habi</span>
@@ -106,7 +106,7 @@ export default function RoleSelectPage() {
         </Link>
       </header>
 
-      <div className="px-6 pt-4 pb-6">
+      <div className="w-full max-w-lg px-6 pt-4 pb-6">
         <h1 className="font-heading text-charcoal text-4xl leading-tight font-bold">
           How will you join the loop?
         </h1>
@@ -116,7 +116,7 @@ export default function RoleSelectPage() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-0 px-4 pb-6">
+      <div className="flex w-full max-w-lg flex-col gap-0 px-4 pb-6">
         {roles.map((role) => (
           <div key={role.id} className="mb-4 rounded-2xl bg-white p-5 shadow-sm">
             <div
@@ -148,7 +148,7 @@ export default function RoleSelectPage() {
         ))}
       </div>
 
-      <div className="mt-auto px-6 pb-8 text-center">
+      <div className="mt-auto w-full max-w-lg px-6 pb-8 text-center">
         <div className="mb-2 flex items-center justify-center gap-1.5">
           <span className="bg-terracotta h-2 w-4 rounded-full" />
           <span className="bg-stone/30 h-2 w-2 rounded-full" />

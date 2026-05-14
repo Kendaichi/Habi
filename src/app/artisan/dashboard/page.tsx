@@ -96,7 +96,7 @@ export default async function ArtisanDashboardPage() {
     <div className="bg-cream min-h-screen">
       <TopNav />
 
-      <div className="space-y-6 px-5 pt-6 pb-24">
+      <div className="mx-auto max-w-2xl space-y-6 px-5 pt-6 pb-24 sm:px-6">
         {/* Greeting */}
         <div>
           <div className="flex items-end justify-between gap-4">
