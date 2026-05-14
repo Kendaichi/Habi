@@ -13,7 +13,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { label: 'Discover', icon: Compass, href: '/buyer/home' },
-  { label: 'AI Room', icon: ScanSearch, href: '/buyer/room/upload' },
+  { label: 'AI Room', icon: ScanSearch, href: '/buyer/room/image-design' },
   { label: 'Orders', icon: ClipboardList, href: '/buyer/orders' },
   { label: 'Profile', icon: UserCircle2, href: '/shared/profile' },
 ]
@@ -25,7 +25,10 @@ export function BuyerBottomNav() {
     <nav className="bg-cream/90 fixed right-0 bottom-0 left-0 z-50 px-4 pb-7 backdrop-blur-md">
       <div className="shadow-charcoal/10 mx-auto flex h-18 max-w-md items-center justify-around rounded-[28px] border border-stone-200 bg-white/95 px-2 shadow-xl">
         {navItems.map((item) => {
-          const isActive = pathname.startsWith(item.href)
+          const isActive =
+            item.href === '/buyer/room/image-design'
+              ? pathname.startsWith('/buyer/room/')
+              : pathname.startsWith(item.href)
 
           return (
             <Link

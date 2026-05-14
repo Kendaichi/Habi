@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GET as getRoomStatus, POST as generateRoom } from '@/api/room/generate'
 import { GET as getRoomWorld } from '@/api/room/world'
+import { GET as getImageDesign, POST as postImageDesign } from '@/api/room/image-design'
 import {
   GET as getListings,
   POST as createListing,
@@ -27,6 +28,8 @@ const routes: Record<string, Route> = {
   'POST /api/room/generate': { method: 'POST', handler: generateRoom },
   'GET /api/room/generate': { method: 'GET', handler: getRoomStatus },
   'GET /api/room/world': { method: 'GET', handler: getRoomWorld },
+  'POST /api/room/image-design': { method: 'POST', handler: postImageDesign },
+  'GET /api/room/image-design': { method: 'GET', handler: getImageDesign },
 
   'GET /api/listings': { method: 'GET', handler: getListings },
   'POST /api/listings': { method: 'POST', handler: createListing },
