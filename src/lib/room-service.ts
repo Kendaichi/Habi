@@ -41,7 +41,6 @@ const MOCK_PROVIDER = 'mock-fallback'
 const COMPOSED_PROVIDER = 'app-composed-world-v1'
 
 const mockRoomStore = new Map<string, MockRoomRecord>()
-const latestMockRoomId: string | null = null
 
 type ListingRecord = Prisma.ListingGetPayload<{
   include: {
@@ -1289,16 +1288,6 @@ export async function getRoomStatus(roomId: string): Promise<RoomStatusResponse 
 export async function getLatestCompletedRoomResult(
   userId = FALLBACK_BUYER_ID,
 ): Promise<RoomResultPayload | null> {
-  if (latestMockRoomId) {
-    const mockRoom = mockRoomStore.get(latestMockRoomId)
-    if (mockRoom) {
-      const mockStatus = makeMockStatus(mockRoom)
-      if (mockStatus.status === 'COMPLETED') {
-        return hydrateMockResult(mockRoom)
-      }
-    }
-  }
-
   let room: RoomRecord | null
   try {
     room = await prisma.room.findFirst({

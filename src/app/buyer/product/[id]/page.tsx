@@ -81,7 +81,7 @@ export default async function ProductDetailPage({
         <div className="relative h-96 bg-cover bg-center" style={{ backgroundImage: `url(${imageUrl})` }}>
           <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(44,44,44,0.02)_20%,_rgba(44,44,44,0.52)_100%)]" />
           <Link
-            href="/buyer/room/upload"
+            href={`/buyer/room/image-design${listingOptions[0]?.listingId ? `?listingId=${listingOptions[0].listingId}` : ''}`}
             className="absolute right-4 bottom-4 inline-flex items-center gap-2 rounded-full bg-white/92 px-4 py-2 text-sm font-semibold text-forest shadow-lg"
           >
             <Camera className="h-4 w-4" />

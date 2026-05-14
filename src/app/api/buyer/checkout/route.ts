@@ -9,6 +9,8 @@ export async function POST(request: Request) {
   const buyer = await requireRole(Role.BUYER)
   const body = (await request.json().catch(() => ({}))) as {
     items?: BuyerCartItem[]
+    startDate?: string
+    endDate?: string
   }
 
   const items = body.items ?? []
@@ -38,12 +40,16 @@ export async function POST(request: Request) {
 
       if (item.mode === 'RENT' || item.mode === 'LEASE' || listing.type !== ListingType.SALE) {
         const now = new Date()
+        const rentalStart = body.startDate ? new Date(body.startDate) : now
+        const rentalEnd = body.endDate
+          ? new Date(body.endDate)
+          : addMonths(rentalStart, item.mode === 'LEASE' ? 12 : 1)
         const rental = await prisma.rental.create({
           data: {
             buyerId: buyer.id,
             listingId: listing.id,
-            startDate: now,
-            endDate: addMonths(now, item.mode === 'LEASE' ? 12 : 1),
+            startDate: rentalStart,
+            endDate: rentalEnd,
           },
         })
         createdRentalIds.push(rental.id)

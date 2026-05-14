@@ -6,6 +6,7 @@ import { RentalTrackerCard } from '@/components/buyer/RentalTrackerCard'
 import { Role } from '@/generated/prisma/enums'
 import { requireRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { MATERIAL_WEIGHT_KG, DEFAULT_WEIGHT_KG } from '@/utils/material-styles'
 
 const rentalImage =
   'data:image/svg+xml;utf8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 360 300%22%3E%3Crect width=%22360%22 height=%22300%22 fill=%22%23faf6f0%22/%3E%3Crect x=%2260%22 y=%22102%22 width=%22240%22 height=%22122%22 rx=%2230%22 fill=%22%23c8553d%22 opacity=%22.2%22/%3E%3Cpath d=%22M92 118h176M88 160h184M96 202h168%22 stroke=%22%231b5e3f%22 stroke-width=%2214%22 stroke-linecap=%22round%22 opacity=%22.42%22/%3E%3C/svg%3E'
@@ -24,6 +25,11 @@ export default async function BuyerOrdersPage() {
     orderBy: { createdAt: 'desc' },
   })
 
+  const impactKg = orders.reduce((sum, order) => {
+    const w = MATERIAL_WEIGHT_KG[order.listing.product.materialType] ?? DEFAULT_WEIGHT_KG
+    return sum + w
+  }, 0)
+
   return (
     <BuyerScreenShell title="My Journey" eyebrow="Orders">
       <p className="text-forest text-xs font-semibold uppercase tracking-[0.24em]">My Journey</p>
@@ -33,7 +39,7 @@ export default async function BuyerOrdersPage() {
       </p>
 
       <div className="mt-6">
-        <ImpactSummary impactKg={32} compact />
+        <ImpactSummary impactKg={impactKg} compact />
       </div>
 
       <section className="mt-6 space-y-3">
