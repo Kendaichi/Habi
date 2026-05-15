@@ -63,7 +63,7 @@ async function callSiliconflow(opts: {
     if (opts.listingImageUrl) body.image2 = opts.listingImageUrl
   }
 
-  const res = await fetch('https://api.siliconflow.cn/v1/images/generations', {
+  const res = await fetch('https://api.siliconflow.com/v1/images/generations', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
